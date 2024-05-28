@@ -325,7 +325,7 @@ def calculate_divergence_for_particle(args):
     
     return i, div
 
-def calculate_velocity_divergence(dim, positions, velocities, density, density_sqr, mass, h, NN_idx):
+def calculate_velocity_divergence(dim, positions, velocities, density, density_sqr, mass, h, NN_idx, Eta):
     """
     Calculate the velocity divergence for each particle in parallel.
     
@@ -408,7 +408,7 @@ kh = Kernel *2
 dp = 0.008
 Eta = dp * 1e-6
 mass = 0.064
-file = "./data_2d/out_0099.csv"
+file = "../../input_data/data_2d/out_0099.csv"
 #===============
 # 3D
 #===============
