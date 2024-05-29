@@ -7,7 +7,7 @@ from scipy.sparse.linalg import cg
 
 # Changed the implimentation to use the laplacian in weight_array_calc_complete()
 
-def weight_array_calc_complete(dim, positions, kh, NN_idx):
+def ker_lap_array(dim, positions, kh, NN_idx):
     weight_array = np.zeros((len(positions), len(positions)))
     for i in range(len(positions)):
         for j in NN_idx[i]:
@@ -17,7 +17,7 @@ def weight_array_calc_complete(dim, positions, kh, NN_idx):
                 weight_array[i][j] = ker_lap(kh, dim, distance)
     return weight_array
 
-def weight_array_calc_paper(dim, positions, kh, NN_idx):
+def ker_grad_array(dim, positions, kh, NN_idx):
     weights = np.zeros((len(positions), len(positions)))
     for i in range(len(positions)):
         for j in NN_idx[i]:
@@ -25,36 +25,22 @@ def weight_array_calc_paper(dim, positions, kh, NN_idx):
             distance = np.linalg.norm(r_ij)
             if distance < kh and distance > 0.0:
                 temp = gradient(dim, r_ij, distance, kh)
-                # temp = gradient(dim, distance)
                 weights[i][j] = np.dot(r_ij, temp)
-
-                # weight_array_x[i][j] = temp[0]
-                # weight_array_y[i][j] = temp[1]
-                # weight_array_z[i][j] = temp[2]
-    # return weight_array_x, weight_array_y, weight_array_z
     return weights
-# def calc_distance(positions):
 
 def update_pressure_paper(args):
     dim, ii, positions, velocities, density, pressure, mass, dt, kh, NN_idx, div, Eta = args
     h = kh/2
     h1 = 1/h
     n = len(positions)
-
     A = np.zeros((n,n))
     b = np.zeros(n)
-
-    weights = weight_array_calc_paper(dim, positions, kh, NN_idx)
-
-    # weight_x , weight_y, weight_z = weight_array_calc_paper(dim, positions, kh, NN_idx)
-    
+    weights = ker_grad_array(dim, positions, kh, NN_idx)
     Eta_2 = Eta * Eta
     for i in range(n):
-
         for j in NN_idx[i]:
             r_ij = positions[i] - positions[j]
             distance = np.linalg.norm(r_ij)
-        
             if distance < kh and distance > 0.0:
                 ker_val = weights[i][j]
                 temp = 4/(density[i] + density[j])
@@ -66,7 +52,6 @@ def update_pressure_paper(args):
                         r_ik = positions[i] - positions[k]
                         distance_ = np.linalg.norm(r_ik)
                         ker_val_ = weights[i][k]
-                        # ker_val_ = np.dot(r_ik, np.array((weight_x[i][k], weight_y[i][k], weight_z[i][k])))
                         temp = 4/(density[i] + density[k])
                         coef = ker_val_*mass*temp/(density[i] * (distance_*distance_ + Eta_2))
                         temp_ += coef
@@ -84,7 +69,7 @@ def update_pressure_complete(args):
     A = np.zeros((n,n))
     b = np.zeros(n)
 
-    weight_array = weight_array_calc_complete(dim, positions, kh, NN_idx)
+    weight_array = ker_lap_array(dim, positions, kh, NN_idx)
     for i in range(n):
 
         for j in NN_idx[i]:
@@ -98,11 +83,7 @@ def update_pressure_complete(args):
                     if k != j:
                         temp += mass / density[i] * weight_array[i][k]
                 A[i][i] += temp
-                # A[i][i] = sum(mass / density[j] * weight_array[i][j] for j in NN_idx[i] if i !=j)  # diagonal term
                 b[i] = density[i] * div[i] / dt
-                # b[i] = dt * div[i] / density[i]
-                # pressure_gradient += weight * (pressure[i] - pressure[j]) * r_ij / (distance + 1e-6)
-                # divergence += np.dot(velocities[i] - velocities[j], r_ij) / (distance + 1e-6)
     new_pressure, info = cg(A, b, atol=1e-8)
     # new_pressure, info = cg(A, b)
     # print(new_pressure)
@@ -184,7 +165,7 @@ def solve_pressure_poisson(dim, positions, velocities, density, density_sqr, pre
         # Collect the results
         for i, new_velocity in velocity_results:
             velocities[i] = new_velocity
-        div = calculate_velocity_divergence(dim, positions, velocities, density, density_sqr, mass, h, NN_idx)
+        div = calculate_velocity_divergence(dim, positions, velocities, density, density_sqr, mass, h, NN_idx, Eta)
         is_non_divergent, max_divergence = check_non_divergent(div)
         print(f"Iteration:{iteration}:Maximum divergence:{max_divergence}")
         max_error = np.max(np.abs(div))
