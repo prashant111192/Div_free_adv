@@ -138,8 +138,9 @@ def solve_pressure_poisson(dim, positions, velocities, density, density_sqr, pre
     num_particles = len(positions)
     
     pool = mp.Pool(mp.cpu_count())
-    max_iteration = np.zeros(num_particles)
+    max_iteration = 1000
     div = np.copy(divergence)
+    itr = 0
     
     # Iteratively solve the Pressure Poisson Equation
     for iteration in range(max_iterations):
@@ -167,19 +168,19 @@ def solve_pressure_poisson(dim, positions, velocities, density, density_sqr, pre
             velocities[i] = new_velocity
         div = calculate_velocity_divergence(dim, positions, velocities, density, density_sqr, mass, h, NN_idx, Eta)
         is_non_divergent, max_divergence = check_non_divergent(div)
-        print(f"Iteration:{iteration}:Maximum divergence:{max_divergence}")
+        print(f"Iteration:{iteration+1}:Maximum divergence:{max_divergence}:Total divergence:{np.sum(div)}")
         max_error = np.max(np.abs(div))
         if max_error < tolerance:
+            itr = iteration + 1
             break
         if iteration == max_iterations - 1:
-            max_iteration[i] = 1
+            itr = iteration + 1
+            break
 
 
     pool.close()
     pool.join()
-
-    print(f"Max iterations reached for {np.sum(max_iteration)} particles")
-    return pressure, velocities
+    return pressure, velocities, itr
 def get_fac(h1, dim):
     # get the kernel normalizing factor
     if dim == 1:
@@ -224,27 +225,22 @@ def dwdq(kh, dim, rij=1.0):
         fac = get_fac(h1, dim)
         # compute sigma * dw_dq
         tmp2 = 2. - q
-        if (rij > 1e-12):
-            if (q > 2.0):
-                val = 0.0
-            elif (q > 1.0):
-                val = -0.75 * tmp2 * tmp2 
-            else:
-                val = -3.0 * q * (1 - 0.75 * q) 
-        else:
+
+        if (q > 2.0):
             val = 0.0
+        elif (q > 1.0):
+            val = -0.75 * tmp2 * tmp2 
+        else:
+            val = -3.0 * q * (1 - 0.75 * q) 
 
         return val * fac
     
-def gradient(dim, xij=[0., 0, 0], rij=1.0, kh=1.0, grad=[0, 0, 0]):
+def gradient(dim, xij, distance, kh=1.0, grad=[0, 0, 0]):
     h = kh / 2
     h1 = 1. / h
     # compute the gradient.
-    if (rij > 1e-12):
-        wdash = dwdq(rij, dim,  h)
-        tmp = wdash * h1 / rij
-    else:
-        tmp = 0.0
+    wdash = dwdq(distance, dim,  h)
+    tmp = wdash * h1 / distance
 
     grad[0] = tmp * xij[0]
     grad[1] = tmp * xij[1]
@@ -296,13 +292,13 @@ def calculate_divergence_for_particle(args):
         distance = np.linalg.norm(r_ij)
         
         if distance < kh and distance > 0.0:
-            xij = positions[i] - positions[j]
-            weight = gradient(dim, xij, distance, kh)
-            temp = np.dot((velocities[j]/density_sqr[j]) + (velocities[i]/density_sqr[i]), weight)
-            # temp = np.dot(velocities[j] + velocities[i], weight)
+            weight = gradient(dim, r_ij, distance, kh)
+            # temp = np.dot((velocities[j]/density_sqr[j]) + (velocities[i]/density_sqr[i]), weight)
+            temp = np.dot(velocities[j] - velocities[i], weight)
             temp = temp * mass* distance/ (distance + Eta)
             div +=  temp
-    div = div * density[i]
+    # div = div * density[i]
+    div = div / density[i]
     
     return i, div
 
@@ -380,16 +376,34 @@ def histogram_div(div_pre, div_post):
     plt.legend(loc='upper right')
     plt.savefig("histogram_post.png")
 
+def rotational_vel(positions, rpm = 10):
+    omega = 2 * np.pi * rpm / 60
+    v_x = positions[:, 0]* omega
+    v_z = positions[:, 2]* omega
+    return v_x, v_z
+
+    
+
 # Example usage
-# 2d
+# 2d - discs
 #===============
 dim = 2
-Kernel = 0.02
+Kernel = 0.008485
 kh = Kernel *2
-dp = 0.008
+dp = 0.005
 Eta = dp * 1e-6
-mass = 0.064
-file = "../../input_data/data_2d/out_0099.csv"
+mass = 0.025
+file = "../../input_data/data_2d/2d_disc/2d_disc_0014.csv"
+#===============
+# 2d
+#===============
+# dim = 2
+# Kernel = 0.02
+# kh = Kernel *2
+# dp = 0.008
+# Eta = dp * 1e-6
+# mass = 0.064
+# file = "../../input_data/data_2d/out_0099.csv"
 #===============
 # 3D
 #===============
@@ -409,9 +423,10 @@ positions = np.column_stack((pos_x, pos_y, pos_z))
 vel_x = data[:, 4]
 vel_y = data[:, 5]
 vel_z = data[:, 6]
+vel_x, vel_z = rotational_vel(positions)
 velocities = np.column_stack((vel_x, vel_y, vel_z))
 density = data[:,7]
-# density = (density * 0) +1000
+density = (density * 0) +1000
 pressure = data[:,8]
 print("the position of first 5 particles are: ", positions[:5])
 
@@ -425,20 +440,19 @@ density_sqr = density ** 2
 divergence_pre = calculate_velocity_divergence(dim, positions, velocities, density, density_sqr, mass, kh, NN_idx, Eta)
 is_non_divergent, max_divergence_pre = check_non_divergent(divergence_pre)
 print(f"Is the flow non-divergent? {is_non_divergent}")
-print(f"Maximum divergence: {max_divergence_pre}")
+print(f"Iteration:{0}:Maximum divergence:{max_divergence_pre}:Total divergence:{np.sum(divergence_pre)}")
 plot_comp(positions, divergence_pre,"pre")
 save_comp(positions, divergence_pre, "output_pre.csv")
 
 dt = 0.01  # Time step
 
-pressure, velocities = solve_pressure_poisson(dim, positions, velocities, density, density_sqr, pressure, mass, dt, kh, NN_idx, divergence_pre, Eta)
+pressure, velocities, itr = solve_pressure_poisson(dim, positions, velocities, density, density_sqr, pressure, mass, dt, kh, NN_idx, divergence_pre, Eta)
 
 
 divergence_post = calculate_velocity_divergence(dim, positions, velocities, density, density_sqr, mass, kh, NN_idx, Eta)
 is_non_divergent, max_divergence_post = check_non_divergent(divergence_post)
 
-print(f"Is the flow non-divergent? {is_non_divergent}")
-print(f"Maximum divergence: {max_divergence_post}")
+print(f"Iteration:{itr}:Maximum divergence:{max_divergence_post}:Total divergence:{np.sum(divergence_post)}")
 save_comp(positions, divergence_post, "output_post.csv")
 
 plot_comp(positions, divergence_post, "post")
