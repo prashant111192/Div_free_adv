@@ -293,12 +293,12 @@ def calculate_divergence_for_particle(args):
         
         if distance < kh and distance > 0.0:
             weight = gradient(dim, r_ij, distance, kh)
-            # temp = np.dot((velocities[j]/density_sqr[j]) + (velocities[i]/density_sqr[i]), weight)
-            temp = np.dot(velocities[j] - velocities[i], weight)
+            temp = np.dot((velocities[j]/density_sqr[j]) + (velocities[i]/density_sqr[i]), weight)
+            # temp = np.dot(velocities[j] - velocities[i], weight)
             temp = temp * mass* distance/ (distance + Eta)
             div +=  temp
-    # div = div * density[i]
-    div = div / density[i]
+    div = div * density[i]
+    # div = div / density[i]
     
     return i, div
 
