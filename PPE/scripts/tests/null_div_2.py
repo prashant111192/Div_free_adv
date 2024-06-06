@@ -50,13 +50,11 @@ def make_particles():
     kh = h*2
     return positions, velocity, density, mass, type, kh, h
 
-def plot_NN_grp(positions, NN_idx, title):
+def plot_NN_grp(positions, NN_idx, title, mid):
     plt.clf()
-    mid = int(len(positions)/2)
-    mid = 0
     plt.scatter(positions[NN_idx[mid][:],0], positions[NN_idx[mid][:],1], s=2)
-    plt.xlim(-0.7, 0.7)
-    plt.ylim(-0.7, 0.7)
+    # plt.xlim(-0.7, 0.7)
+    # plt.ylim(-0.7, 0.7)
     plt.savefig(f'NN_grp_{title}.png')
 
 def plot_velocity_vec(positions, velocity, title): 
@@ -169,19 +167,19 @@ def vol_fluid(mass, density, type):
     return vol
 
 def check_kernel_summation_for_particle(arg):
-    i, positions, kh, NN_idx,= arg
+    i, positions, kh, NN_idx,mass, density= arg
     den = 0.0
     for j in NN_idx[i]:
         r_ij = positions[i] - positions[j]
         distance = np.linalg.norm(r_ij)
         weight = poly6(kh, distance)
         # weight = ker_w(kh, distance)
-        den += weight *distance/(distance+1e-20)
+        den += (mass/density[i])*weight *distance/(distance+1e-20)
     return i, den
 
-def check_kernel_summation(positions, kh, NN_idx):
+def check_kernel_summation(positions, kh, NN_idx, mass, density):
     # pool = mp.Pool(mp.cpu_count())
-    args = [(i, positions, kh, NN_idx) for i in range(len(positions))]
+    args = [(i, positions, kh, NN_idx, mass, density) for i in range(len(positions))]
     # results = pool.map(check_kernel_summation_for_particle, args)
     results = [check_kernel_summation_for_particle(arg) for arg in args]
 
@@ -195,18 +193,22 @@ def check_kernel_summation(positions, kh, NN_idx):
 def main():
     pos, vel, density, mass, type, kh, h = make_particles()
     Eta = 1e-20
+    radius_ = h*8
     plot_velocity_vec(pos, vel, 'start')
     plot_prop(pos, type, 'type')
-    nbrs = NN.NearestNeighbors(radius=kh, algorithm='kd_tree').fit(pos)
+    nbrs = NN.NearestNeighbors(radius=radius_, algorithm='kd_tree').fit(pos)
     NN_idx = nbrs.radius_neighbors(pos)[1]
     print(f'average number of neighbors: {np.mean([len(idx) for idx in NN_idx])}')
     # for i in range(len(NN_idx[1])):
     #     print(pos[NN_idx[1][i],1])
-    plot_NN_grp(pos, NN_idx, 'NN')
-    ker_calc = check_kernel_summation(pos, kh, NN_idx)
-    plot_prop(pos, ker_calc, 'ker_calc')
-    # den_calc = calc_density(pos, mass, kh, NN_idx, Eta, density, type)
-    # plot_prop(pos, den_calc-density, 'density_diff')
+    # ker_calc = check_kernel_summation(pos, kh, NN_idx, mass, density)
+    # plot_prop(pos, ker_calc, 'ker_calc')
+    mid_idx = int(len(den_calc)/2)
+    plot_NN_grp(pos, NN_idx[mid_idx], 'NN', mid_idx)
+    list_kh = np.linspace(h, radius_, 1000)
+    for i, kh_ in enumerate(list_kh):
+        den_calc = calc_density(pos, mass, kh_, NN_idx, Eta, density, type)
+        plot_prop(pos, den_calc-density, f'density_diff_{kh_/h}')
     # climin = np.min(den_calc)
     # climax = np.max(den_calc)
     # plot_prop(pos, den_calc, 'density_calc')
