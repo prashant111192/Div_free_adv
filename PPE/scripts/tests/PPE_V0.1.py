@@ -389,7 +389,7 @@ def rotational_vel(positions, rpm = 10):
 #===============
 dim = 2
 Kernel = 0.008485
-kh = Kernel *2
+kh = Kernel *12
 dp = 0.005
 Eta = dp * 1e-6
 mass = 0.025

@@ -5,17 +5,6 @@ from scipy.sparse.linalg import cg
 import numpy as np
 import math
 
-class Particle:
-    density = 0
-    pressure = 0
-    velocity = np.zeros(2)
-    position = np.zeros(2)
-    type = 0
-    def __init__(self, position, velocity, density, mass, type):
-        self.position = position
-        self.velocity = velocity
-        self.density = density
-        self.type = type
 def make_particles():
     length =1*1000 # meters
     dp = 0.008*1000 # meters
@@ -203,8 +192,8 @@ def main():
     #     print(pos[NN_idx[1][i],1])
     # ker_calc = check_kernel_summation(pos, kh, NN_idx, mass, density)
     # plot_prop(pos, ker_calc, 'ker_calc')
-    mid_idx = int(len(den_calc)/2)
-    plot_NN_grp(pos, NN_idx[mid_idx], 'NN', mid_idx)
+    # mid_idx = int(len(den_calc)/2)
+    # plot_NN_grp(pos, NN_idx[mid_idx], 'NN', mid_idx)
     list_kh = np.linspace(h, radius_, 1000)
     for i, kh_ in enumerate(list_kh):
         den_calc = calc_density(pos, mass, kh_, NN_idx, Eta, density, type)
