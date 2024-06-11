@@ -26,7 +26,7 @@ def make_particles(length =1, boundary_fac = 40, dp=0.008):
         for j in range(resolution):
             pos[count] = np.array([(x1+(dp*i)),(y1+(dp*j))])
             if x1+boundary_width/2<(x1+(dp*i))<x2-dp-boundary_width/2 and y1+boundary_width/2<(y1+(dp*j))<y2-dp-boundary_width/2:
-                p_type[count] = 1
+                p_type[count] = 1 # Fluid particle
                 if pos[count][0] > 0 and pos[count][1] > 0 and pos[count][0] < 30*dp and pos[count][1] < 30*dp:
                     velocity[count] = np.array([0.05,0.05])
             count += 1
@@ -115,7 +115,12 @@ def calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type):
     results = np.zeros(len(density))
     pool = mp.Pool(6)
     args = [(i, pos,vel , density, mass, kh, NN_idx, Eta, p_type) for i in range(n_particles)]
+    # for arg in args:
+    #     i, div = calc_divergence_part(arg)
+    #     divergence[i] = div
     results = pool.map(calc_divergence_part, args)
+    pool.close()
+    pool.join()
     for i, div in results:
         divergence[i] = div
     return divergence
@@ -125,10 +130,14 @@ def gradient_poly6(r_ij, distance, kh):
     h1 = 1/h
     fac = (4*h1**8)/(np.pi)
     temp = h**2 - distance**2
+    grad = np.zeros(2)
     if 0 < distance <= h:
-        return fac * 3*((temp)**2)*(-2*distance)
+        temp_2 = fac * 3*((temp)**2)*(-2*distance) * h1 / distance
+        grad = temp_2 * r_ij
+
+        return grad
     else:
-        return 0 
+        return grad 
 
 
 def calc_divergence_part(arg):
