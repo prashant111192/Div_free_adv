@@ -27,6 +27,7 @@ def make_particles(length =1, boundary_fac = 40, dp=0.008):
             pos[count] = np.array([(x1+(dp*i)),(y1+(dp*j))])
             if x1+boundary_width/2<(x1+(dp*i))<x2-dp-boundary_width/2 and y1+boundary_width/2<(y1+(dp*j))<y2-dp-boundary_width/2:
                 p_type[count] = 1 # Fluid particle
+                # velocity[count] = np.array([math.sin(pos[count][0])*0.01,math.cos(pos[count][1])*0.01])
                 if pos[count][0] > 0 and pos[count][1] > 0 and pos[count][0] < 30*dp and pos[count][1] < 30*dp:
                     velocity[count] = np.array([0.05,0.05])
             count += 1
@@ -161,6 +162,125 @@ def calc_divergence_part(arg):
     
     return i, div
 
+def pressure_possion(pos, vel, density, mass, kh, NN_idx, Eta, div_prev, p_type):
+    n_part = len(density)
+    max_iter = 1000
+    div = div_prev
+    pressure = np.zeros(n_part)
+    iter = 0
+    while iter < max_iter:
+        args = [(i, pos, vel, density, mass, kh, NN_idx, Eta, p_type, div) for i in range(n_part)]
+        div_vel_comp = div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure, n_part)
+        vel = vel - div_vel_comp
+        div = calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type)
+        print(f'iter: {iter}, max_div: {np.max(np.abs(div))}')
+        if iter%100 == 0:
+            plot_prop(pos, div, f'div_{iter}')
+        if np.max(np.abs(div)) < 1e-6:
+            break
+        iter += 1
+    if iter == max_iter:
+        print(f'Max iter reached and the max divergence is:{np.abs(np.max(div))}')
+    return vel
+
+def div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure, n_part):
+    h = kh
+    h1 = 1/h
+    A_mat = np.zeros((n_part, n_part))
+    b_mat = np.zeros(n_part)
+    weights_grad = ker_grad_arr(pos, kh, NN_idx)
+    weights_lap = ker_lap_arr(pos, kh, NN_idx)
+    args = [(i, pos, vel, density, mass, NN_idx, p_type, kh, weights_lap, weights_lap) for i in range(n_part)]
+    pool = mp.Pool(6)
+    results = pool.map(div_part_vel_part, args)
+
+    # for i in range(n_part):
+    #     temp_ii= 0.0
+    #     for j in NN_idx[i]:
+    #         if i ==j:
+    #             continue
+    #         r_ij = pos[i] - pos[j]
+    #         distance = np.linalg.norm(r_ij)
+    #         if distance < kh and distance > 0.0:
+    #             # weight = gradient_poly6(r_ij, distance, kh)
+    #             A_mat[i,j] =  (mass/density[i])*weights_lap[i,j]
+
+    #             temp = np.dot((vel[j] - vel[i]), weights_grad[i,j])
+    #             b_mat[i] += temp 
+    #     b_mat[i] = b_mat[i] * mass / density[i]
+    #     A_mat[i,i] = -np.sum(A_mat[i,:])
+    for i, A_mat, b_mat in results:
+        A_mat[i] = A_mat
+        b_mat[i] = b_mat
+
+    
+    div_vel_comp = cg(A_mat, b_mat, atol = 1e-8)
+    return div_vel_comp
+
+def div_part_vel_part(arg):
+    i, pos, vel, density, mass, NN_idx, p_type, kh, n_part, weights_lap, weights_grad = arg
+    A_mat =np.zeros(n_part)
+    b_mat = 0
+    if p_type[i] == 0:
+        return i, A_mat, b_mat
+
+    temp_ii= 0.0
+    for j in NN_idx[i]:
+        if i ==j:
+            continue
+        r_ij = pos[i] - pos[j]
+        distance = np.linalg.norm(r_ij)
+        if distance < kh and distance > 0.0:
+            # weight = gradient_poly6(r_ij, distance, kh)
+            A_mat[j] =  (mass/density[i])*weights_lap[i,j]
+
+            temp = np.dot((vel[j] - vel[i]), weights_grad[i,j])
+            b_mat += temp 
+    b_mat = b_mat * mass / density[i]
+    A_mat[i] = -np.sum(A_mat[i,:])
+
+    return i, A_mat, b_mat
+
+def ker_grad_arr(pos, kh, NN_idx, vel):
+    weights = np.zeros((len(pos), len(pos)))
+    for i in range(len(pos)):
+        for j in NN_idx[i]:
+            r_ij = pos[i] - pos[j]
+            distance = np.linalg.norm(r_ij)
+            if distance < kh and distance > 0.0:
+                temp = gradient_poly6(r_ij, distance, kh)
+                temp = np.dot(temp, vel[NN_idx[j]])
+                weights[i,j] = temp
+    return weights
+            
+def ker_lap_arr(pos, kh, NN_idx):
+    weights = np.zeros((len(pos), len(pos)))
+    for i in range(len(pos)):
+        for j in NN_idx[i]:
+            r_ij = pos[i] - pos[j]
+            distance = np.linalg.norm(r_ij)
+            if distance < kh and distance > 0.0:
+                temp = lap_poly6(r_ij, distance, kh)
+                weights[i,j] = temp
+    return weights
+
+def lap_poly6(r_ij, distance, kh):
+    h = kh
+    h1 = 1/h
+    fac = (4*h1**8)/(np.pi)
+    temp = h**2 - distance**2
+    lap = 0.0
+    if 0 < distance <= h:
+        temp_2 = fac * (3 *(2 * temp *(4 *distance**2) + (temp * temp)*(-2)))
+        temp_2 = temp_2 *  h1 / distance
+        lap = temp_2
+        return lap
+    else:
+        return lap
+
+
+
+
 
 def main():
     plt.rcParams['figure.dpi'] = 600
@@ -184,7 +304,10 @@ def main():
     # temp = (density-density_new)*100/density
     # plot_prop(pos, temp, 'per_cent_density_diff')
     div = calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type)
-    plot_prop(pos, div, 'divergence, ini')
+    print(f'max_div: {np.max(np.abs(div))} and sum of div: {np.sum(div)}')
+    plot_prop(pos, div, 'divergence_ini')
+    vel = pressure_possion(pos, vel, density, mass, kh, NN_idx, Eta, div, p_type)
+    plot_velocity_vec(pos, vel, 'end')
 
     
 
