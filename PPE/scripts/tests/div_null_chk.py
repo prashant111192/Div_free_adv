@@ -1,4 +1,5 @@
 import multiprocessing as mp
+from multiprocessing import sharedctypes as sct
 import matplotlib.pyplot as plt
 import sklearn.neighbors as NN
 from scipy.sparse.linalg import cg
@@ -119,7 +120,7 @@ def calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type):
     divergence = np.zeros(len(density), dtype=np.float32)
     results = np.zeros(len(density), dtype=np.float32)
     pool = mp.Pool((mp.cpu_count()-6))
-    args = [(i, pos,vel , density, mass, kh, NN_idx, Eta, p_type) for i in range(n_particles)]
+    args = [(i, pos, vel , density, mass, kh, NN_idx, Eta, p_type) for i in range(n_particles)]
     # for arg in args:
     #     i, div = calc_divergence_part(arg)
     #     divergence[i] = div
@@ -357,9 +358,12 @@ def main():
     print(f'max number of neighbors: {np.max([len(idx) for idx in NN_idx])}')
     # print(f'average number of neighbors: {np.mean([len(idx) for idx in NN_idx])}')
     start = time.time()
+    print('started calculating kernels')
     ker_grad_array_x, ker_grad_array_y = ker_grad_arr(pos, kh, NN_idx)
+    print('grad')
     # print(ker_grad_array[0,0,:])
     ker_lap_array = ker_lap_arr(pos, kh, NN_idx)
+    print('lap')
     print(ker_lap_array[0,0])
     end = time.time()
     # print(f'Time taken to calculate kernels: {end-start} s')
@@ -421,7 +425,8 @@ def ker_grad_arr_part(arg):
 
 
 def ker_lap_arr(pos, kh, NN_idx):
-    weights = np.zeros((len(pos), len(pos)), dtype=np.float32)
+    weights = sp.lil_matrix((len(pos), len(pos)), dtype=np.float32)
+    # weights = np.zeros((len(pos), len(pos)), dtype=np.float32)
     for i in range(len(pos)):
         for j in NN_idx[i]:
             r_ij = pos[i] - pos[j]
