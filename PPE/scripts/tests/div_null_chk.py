@@ -186,7 +186,8 @@ def pressure_possion(pos, vel, density, mass, kh, NN_idx, Eta, div_prev, p_type,
         # args = [(i, pos, vel, density, mass, kh, NN_idx, Eta, p_type, div) for i in range(n_part)]
         div_vel_comp = div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure, n_part, ker_lap_array, ker_grad_array_x, ker_grad_array_y)
         # vel = vel - div_vel_comp
-        vel = calc_non_div_vel(pos, div_vel_comp, density, mass, kh, NN_idx, ker_grad_array_x, ker_grad_array_y, p_type)
+        q = calc_non_div_vel(pos, div_vel_comp, density, mass, kh, NN_idx, ker_grad_array_x, ker_grad_array_y, p_type)
+        vel = vel - q
         div = calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type)
         print(f'iter:{iter}:max_div:{np.max(np.abs(div))}:div_sum:{np.sum(div)}')
         if iter%100 == 0:
@@ -210,12 +211,12 @@ def calc_non_div_vel(pos, q, density, mass, kh, NN_idx, ker_grad_array_x, ker_gr
             if distance < kh and distance > 0.0:
                 temp = np.array([ker_grad_array_x[i,j], ker_grad_array_y[i,j]])
                 # temp = gradient_poly6(r_ij, distance, kh)
-                temp = temp (q[j] - q[i])
+                temp = temp *(q[j] - q[i])
                 grad_q[i] += temp
         grad_q[i] = grad_q[i] * mass / density[i]
     
-    vel = vel - grad_q
-    return vel
+    # q = q - grad_q
+    return grad_q
 
 def div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure, n_part, weights_lap, weights_grad_x, weights_grad_y):
     h = kh
@@ -265,7 +266,7 @@ def div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure
     if cg_success != 0:
         print('CG did not converge')
     # div_vel_comp = np.array(cg(A_mat, b_mat, atol = 1e-8)[])
-    # print(div_vel_comp.shape)
+    print(div_vel_comp.shape)
     return div_vel_comp
 
 def div_part_vel_part(arg):
@@ -343,9 +344,9 @@ def main():
     plt.rcParams['figure.dpi'] = 600
     plt.rcParams['savefig.dpi'] = 600
     length = 1
-    boundary_fac = 40
-    # dp = 0.04
-    dp = 0.006
+    boundary_fac = 10
+    dp = 0.08
+    # dp = 0.006
     pos, vel, density, mass, p_type, kh, h, mid = make_particles(length, boundary_fac, dp)
     Eta = 1e-20
     radius_ = dp*12
@@ -394,8 +395,8 @@ def ker_grad_arr(pos, kh, NN_idx):
     pool.join()
     for i, weights in results:
         for ji, j in enumerate(NN_idx[i]):
-            weights_x[i, j] = weights[ji][0]
-            weights_y[i, j] = weights[ji][1]
+            weights_x[i, j] = weights[ji, 0]
+            weights_y[i, j] = weights[ji, 1]
     print(f'done')
     # for i in range(len(pos)):
     #     for j in NN_idx[i]:
@@ -410,7 +411,8 @@ def ker_grad_arr(pos, kh, NN_idx):
 
 def ker_grad_arr_part(arg):
     i, pos, kh, NN_idx = arg
-    weights = np.zeros((len(NN_idx[i]),2), dtype=np.float32)
+    weights = sp.lil_matrix((len(NN_idx[i]),2), dtype=np.float32)
+    # weights = np.zeros((len(NN_idx[i]),2), dtype=np.float32)
 
     for ij, j in enumerate(NN_idx[i]):
         r_ij = pos[i] - pos[j]
