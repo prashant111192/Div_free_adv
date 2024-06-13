@@ -61,8 +61,10 @@ def poly6(kh, distance):
 
 def plot_velocity_vec(positions, velocity, title): 
     vel_mag = velocity[:,0]**2 + velocity[:,1]**2
-    pos = positions[::25,:]
-    vel = velocity[::25,:]
+    # pos = positions[::25,:]
+    # vel = velocity[::25,:]
+    pos = positions
+    vel = velocity
     plt.cla()
     plt.quiver(pos[:,0], pos[:,1], vel[:,0], vel[:,1], scale=1, scale_units='xy')
     # plt.quiver(positions[:,0], positions[:,1], velocity[:,0], velocity[:,1], scale=0.3, scale_units='xy')
@@ -71,7 +73,9 @@ def plot_velocity_vec(positions, velocity, title):
 
 def plot_prop(positions, prop, title, climax=None, climin=None):
     plt.clf()
-    plt.scatter(positions[:,0], positions[:,1], c=prop, cmap='viridis', s=0.2, alpha=0.5)
+    plt.scatter(positions[:,0], positions[:,1], c=prop, cmap='jet', s=10, alpha=1)
+    # plt.scatter(positions[:,0], positions[:,1], c=prop, cmap='twilight_shifted', s=10, alpha=1)
+    # plt.scatter(positions[:,0], positions[:,1], c=prop, cmap='viridis', s=0.2, alpha=0.5)
     if climax is not None:
         plt.clim(vmax=climax, vmin=climin)
     plt.colorbar()
@@ -190,8 +194,9 @@ def pressure_possion(pos, vel, density, mass, kh, NN_idx, Eta, div_prev, p_type,
         vel = vel - q
         div = calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type)
         print(f'iter:{iter}:max_div:{np.max(np.abs(div))}:div_sum:{np.sum(div)}')
-        if iter%100 == 0:
-            plot_prop(pos, div, f'div_{iter}')
+        if iter%5 == 0:
+            plot_prop(pos, div, f'div_{iter}', 2, -2)
+            plot_velocity_vec(pos, vel, f'vel_{iter}')
         if np.max(np.abs(div)) < 1e-6:
             break
         iter += 1
@@ -345,11 +350,11 @@ def main():
     plt.rcParams['savefig.dpi'] = 600
     length = 1
     boundary_fac = 10
-    dp = 0.08
+    dp = 0.04
     # dp = 0.006
     pos, vel, density, mass, p_type, kh, h, mid = make_particles(length, boundary_fac, dp)
     Eta = 1e-20
-    radius_ = dp*12
+    radius_ = dp*5
     kh = radius_
     # radius_ = h*
     plot_velocity_vec(pos, vel, 'start')
