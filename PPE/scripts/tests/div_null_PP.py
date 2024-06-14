@@ -142,7 +142,7 @@ def gradient_poly6(r_ij, distance, kh):
     temp = h**2 - distance**2
     grad = np.zeros(2, dtype=np.float32)
     if 0 < distance <= h:
-        temp_2 = fac * 3*((temp)**2)*(-2*distance) / distance
+        temp_2 = fac * 3*((temp)**2)*(-2*distance) * h1 / distance
         grad = temp_2 * r_ij
 
         return grad
@@ -180,8 +180,14 @@ def pressure_possion(pos, vel, density, mass, kh, NN_idx, Eta, div_prev, p_type,
     div = div_prev
     pressure= 0
     iter = 0
+    # start = time.time()
+    # weights_grad = ker_grad_arr(pos, kh, NN_idx, vel)
+    # weights_lap = ker_lap_arr(pos, kh, NN_idx)
+    # end = time.time()   
+    # print(f'Time taken to calculate kernels: {end-start} s')
 
     while iter < max_iter:
+        # args = [(i, pos, vel, density, mass, kh, NN_idx, Eta, p_type, div) for i in range(n_part)]
         div_vel_comp = div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure, n_part, ker_lap_array, ker_grad_array_x, ker_grad_array_y)
         # vel = vel - div_vel_comp
         q = calc_non_div_vel(pos, div_vel_comp, density, mass, kh, NN_idx, ker_grad_array_x, ker_grad_array_y, p_type)
@@ -189,7 +195,7 @@ def pressure_possion(pos, vel, density, mass, kh, NN_idx, Eta, div_prev, p_type,
         div = calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type)
         print(f'iter:{iter}:max_div:{np.max(np.abs(div))}:div_sum:{np.sum(div)}')
         if iter%5 == 0:
-            plot_prop(pos, div, f'div_{iter}', 0.4, -0.4)
+            plot_prop(pos, div, f'div_{iter}', 2, -2)
             plot_velocity_vec(pos, vel, f'vel_{iter}')
         if np.max(np.abs(div)) < 1e-6:
             break
@@ -203,23 +209,15 @@ def calc_non_div_vel(pos, q, density, mass, kh, NN_idx, ker_grad_array_x, ker_gr
     grad_q = np.zeros((n_part, 2), dtype=np.float32)
     for i in range(n_part):
         if p_type[i] == 0:
-            for j in NN_idx[i]:
-                r_ij = pos[i] - pos[j]
-                distance = np.linalg.norm(r_ij)
-                if distance < kh and distance > 0.0:
-                    temp = np.array([ker_grad_array_x[i,j], ker_grad_array_y[i,j]])
-                    # temp = gradient_poly6(r_ij, distance, kh)
-                    temp = temp *(q[j] - q[i])
-                    grad_q[i] += temp
-        else:
-            for j in NN_idx[i]:
-                r_ij = pos[i] - pos[j]
-                distance = np.linalg.norm(r_ij)
-                if distance < kh and distance > 0.0:
-                    temp = np.array([ker_grad_array_x[i,j], ker_grad_array_y[i,j]])
-                    # temp = gradient_poly6(r_ij, distance, kh)
-                    temp = temp *(q[j] - q[i])
-                    grad_q[i] += temp
+            continue
+        for j in NN_idx[i]:
+            r_ij = pos[i] - pos[j]
+            distance = np.linalg.norm(r_ij)
+            if distance < kh and distance > 0.0:
+                temp = np.array([ker_grad_array_x[i,j], ker_grad_array_y[i,j]])
+                # temp = gradient_poly6(r_ij, distance, kh)
+                temp = temp *(q[j] - q[i])
+                grad_q[i] += temp
         grad_q[i] = grad_q[i] * mass / density[i]
     
     # q = q - grad_q
@@ -273,7 +271,7 @@ def div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure
     if cg_success != 0:
         print('CG did not converge')
     # div_vel_comp = np.array(cg(A_mat, b_mat, atol = 1e-8)[])
-    # print(div_vel_comp.shape)
+    print(div_vel_comp.shape)
     return div_vel_comp
 
 def div_part_vel_part(arg):
@@ -337,7 +335,7 @@ def lap_poly6(r_ij, distance, kh):
     lap = 0.0
     if 0 < distance <= h:
         temp_2 = fac * (3 *(2 * temp *(4 *distance**2) + (temp * temp)*(-2)))
-        # temp_2 = temp_2 
+        temp_2 = temp_2 *  h1 / distance
         lap = temp_2
         return lap
     else:
@@ -429,6 +427,8 @@ def ker_grad_arr_part(arg):
             # weights[i,j,:] = temp
     
     return i, weights
+
+
 
 
 def ker_lap_arr(pos, kh, NN_idx):
