@@ -45,6 +45,7 @@ def make_particles(length =1, boundary_fac = 40, dp=0.008):
     kh = h*2
     mid = ((resolution*resolution/2 ))    
     mid = int(mid)
+    print(f'Number of particles: {len(pos)}')
     return pos, velocity, density, mass, p_type, kh, h, mid
 
 def poly6(kh, distance):
@@ -157,7 +158,6 @@ def calc_divergence_part(arg):
     if p_type[i] == 0:
         return i, div
         
-    
     if p_type[i] !=0:
         for j in NN_idx[i]:
             r_ij = pos[i] - pos[j]
@@ -221,7 +221,6 @@ def calc_non_div_vel(pos, q, density, mass, kh, NN_idx, ker_grad_array_x, ker_gr
                     temp = temp *(q[j] - q[i])
                     grad_q[i] += temp
         grad_q[i] = grad_q[i] * mass / density[i]
-    
     # q = q - grad_q
     return grad_q
 
@@ -348,16 +347,20 @@ def lap_poly6(r_ij, distance, kh):
 
 
 def main():
+    start = time.time()
     plt.rcParams['figure.dpi'] = 600
     plt.rcParams['savefig.dpi'] = 600
     length = 1
     boundary_fac = 10
-    dp = 0.04
+    dp = 0.001
     # dp = 0.006
     pos, vel, density, mass, p_type, kh, h, mid = make_particles(length, boundary_fac, dp)
     Eta = 1e-20
     radius_ = dp*5
     kh = radius_
+    end = time.time()
+    print(f'Time taken to make particles: {end-start} s')
+    exit()
     # radius_ = h*
     plot_velocity_vec(pos, vel, 'start')
     plot_prop(pos, p_type, 'p_type')
@@ -430,7 +433,6 @@ def ker_grad_arr_part(arg):
     
     return i, weights
 
-
 def ker_lap_arr(pos, kh, NN_idx):
     weights = sp.lil_matrix((len(pos), len(pos)), dtype=np.float32)
     # weights = np.zeros((len(pos), len(pos)), dtype=np.float32)
@@ -443,7 +445,5 @@ def ker_lap_arr(pos, kh, NN_idx):
                 weights[i,j] = temp
     return weights
     
-
-
 if __name__ == '__main__':
     main()
