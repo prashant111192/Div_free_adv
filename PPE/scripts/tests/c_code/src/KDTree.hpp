@@ -11,6 +11,13 @@
  *
  */
 
+
+/*
+* Chnages made to the original code:
+* 1. Made changes to some function to allow returning the distance and the index.
+* 2. Changed the index from size_t to unsigned int to reduce memory usage. The max value of unsigned int is 4,294,967,295
+*/
+
 #include <algorithm>
 #include <functional>
 #include <memory>
@@ -18,31 +25,31 @@
 #include <iostream>
 
 using point_t = std::vector< double >;
-using indexArr = std::vector< size_t >;
-using pointIndex = typename std::pair< std::vector< double >, size_t >;
+using indexArr = std::vector< unsigned int >;
+using pointIndex = typename std::pair< std::vector< double >, unsigned int >;
 
 class KDNode {
    public:
     using KDNodePtr = std::shared_ptr< KDNode >;
-    size_t index;
+    unsigned int index;
     point_t x;
     KDNodePtr left;
     KDNodePtr right;
 
     // initializer
     KDNode();
-    KDNode(const point_t &, const size_t &, const KDNodePtr &,
+    KDNode(const point_t &, const unsigned int &, const KDNodePtr &,
            const KDNodePtr &);
     KDNode(const pointIndex &, const KDNodePtr &, const KDNodePtr &);
     ~KDNode();
 
     // getter
-    double coord(const size_t &);
+    double coord(const unsigned int &);
 
     // conversions
     explicit operator bool();
     explicit operator point_t();
-    explicit operator size_t();
+    explicit operator unsigned int();
     explicit operator pointIndex();
 };
 
@@ -61,11 +68,11 @@ inline double dist(const KDNodePtr &, const KDNodePtr &);
 // Need for sorting
 class comparer {
    public:
-    size_t idx;
-    explicit comparer(size_t idx_);
+    unsigned int idx;
+    explicit comparer(unsigned int idx_);
     inline bool compare_idx(
-        const std::pair< std::vector< double >, size_t > &,  //
-        const std::pair< std::vector< double >, size_t > &   //
+        const std::pair< std::vector< double >, unsigned int > &,  //
+        const std::pair< std::vector< double >, unsigned int > &   //
     );
 };
 
@@ -73,7 +80,7 @@ using pointIndexArr = typename std::vector< pointIndex >;
 
 inline void sort_on_idx(const pointIndexArr::iterator &,  //
                         const pointIndexArr::iterator &,  //
-                        size_t idx);
+                        unsigned int idx);
 
 using pointVec = std::vector< point_t >;
 
@@ -83,8 +90,8 @@ class KDTree {
 
     KDNodePtr make_tree(const pointIndexArr::iterator &begin,  //
                         const pointIndexArr::iterator &end,    //
-                        const size_t &length,                  //
-                        const size_t &level                    //
+                        const unsigned int &length,                  //
+                        const unsigned int &level                    //
     );
 
    public:
@@ -95,7 +102,7 @@ class KDTree {
     KDNodePtr nearest_(           //
         const KDNodePtr &branch,  //
         const point_t &pt,        //
-        const size_t &level,      //
+        const unsigned int &level,      //
         const KDNodePtr &best,    //
         const double &best_dist   //
     );
@@ -105,7 +112,7 @@ class KDTree {
 
    public:
     point_t nearest_point(const point_t &pt);
-    size_t nearest_index(const point_t &pt);
+    unsigned int nearest_index(const point_t &pt);
     pointIndex nearest_pointIndex(const point_t &pt);
 
    private:
@@ -113,13 +120,13 @@ class KDTree {
         const KDNodePtr &branch,  //
         const point_t &pt,        //
         const double &rad,        //
-        const size_t &level
+        const unsigned int &level
     );
     pointIndexArr neighborhood_(  //
         const KDNodePtr &branch,  //
         const point_t &pt,        //
         const double &rad,        //
-        const size_t &level,      //
+        const unsigned int &level,      //
         std::vector<double>&
     );
 

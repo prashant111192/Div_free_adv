@@ -75,7 +75,7 @@ int main()
     auto start = std::chrono::high_resolution_clock::now();
     std::cout << "Let's do this!!" << std::endl;
     data_type size = 1;
-    data_type dp = 0.004;
+    data_type dp = 0.001;
     auto boundary_fac = 12;
     constants c = define_constants(size, dp, boundary_fac);
 
@@ -116,8 +116,10 @@ int main()
     {
         NN_i += nearIndex[i].capacity();
     }
+    total_NN = NN_i * sizeof(unsigned int);
+    std::cout << "Total memory used for NN_index: " << total_NN/(1024*1024) << " Mbytes" << std::endl;
     total_NN = NN_i * sizeof(data_type);
-    std::cout << "Total memory used for NN: " << total_NN/(1024*1024) << " Mbytes" << std::endl;
+    std::cout << "Total memory used for NN_distance: " << total_NN/(1024*1024) << " Mbytes" << std::endl;
     std::cout<< "size of double: " << sizeof(data_type) << "and size of unsigned int: " << sizeof(unsigned int) << std::endl;
     std::cout << "Time taken by function: "
          << duration.count()/1e6 << " seconds" << std::endl;
