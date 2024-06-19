@@ -1,9 +1,11 @@
+#ifndef TYPE_DEF_HPP
+#define TYPE_DEF_HPP
 #include <chrono>
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 #define data_type double // data type for the particles // Need double for Knn, change accordingly. 
 
 using namespace Eigen;
-#pragma once
 
 
 struct constants
@@ -26,3 +28,5 @@ struct constants
 
 
 typedef Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> MatrixXX;
+typedef Eigen::SparseMatrix<data_type> SpMatrixXX;
+#endif

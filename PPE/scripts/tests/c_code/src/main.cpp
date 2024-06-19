@@ -4,13 +4,9 @@
 #include <fstream>
 
 #include "type_def.hpp"
-#include "in_out.hpp"
 #include "NN.hpp"
+#include "in_out.hpp"
 #include "compute.hpp"
-
-
-using namespace std;
-using namespace Eigen;
 
 constants define_constants(data_type size, data_type dp, data_type boundary_fac)
 {
@@ -88,6 +84,7 @@ int main()
     MatrixXX vel(c.n_particles, 2);
     MatrixXX density(c.n_particles, 1);
     MatrixXi p_type(c.n_particles, 1);
+    density.fill(1000);
     p_type.fill(1);
     data_type mass = density(0) * dp * dp;
 
@@ -100,6 +97,7 @@ int main()
     // make_particles(c, pos, vel, density, p_type);
     std::vector<std::vector<double>> nearDist(c.n_particles);         // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
     std::vector<std::vector<unsigned>> nearIndex(c.n_particles); // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
+    // return 0;
     initialise_NN(c, pos, nearIndex, nearDist);
     int count = 0;
     for (unsigned int j = 0; j<nearIndex.size(); j++)
@@ -118,11 +116,12 @@ int main()
     calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, c);
     // std::vector<data_type> divergence(c.n_particles, 0);
     // calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, c);
+    pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, c);
 
-    // save_data(p_type, "p_type.csv");
-    // save_data(divergence, "divergence.csv");
-    // save_data(pos, "pos.csv");
-    // save_data(vel, "vel.csv");
+    writeMatrixToFile(p_type, "p_type.csv");
+    writeMatrixToFile(divergence, "divergence.csv");
+    writeMatrixToFile(pos, "pos.csv");
+    writeMatrixToFile(vel, "vel.csv");
     // std::cout << "resolution: " << c.resolution << std::endl;
     // std::cout << "n_particles: " << c.n_particles << std::endl;
     // size_t total_NN;
