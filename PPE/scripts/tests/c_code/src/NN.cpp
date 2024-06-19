@@ -1,26 +1,29 @@
 #include "NN.hpp"
 
 void initialise_NN(constants &c,
-                   std::vector<std::vector<data_type>> &pos,
+                   MatrixXX &pos,
                    std::vector<std::vector<unsigned int>> &nearIndex,
                    std::vector<std::vector<double>> &nearDist)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    KDTree tree(pos);
+    std::vector<std::vector<data_type>> pos_vec(c.n_particles, std::vector<data_type>(2, 0));
+#pragma omp parallel for num_threads(10)
+    for (unsigned int i = 0; i < c.n_particles; i++)
+    {
+        pos_vec[i][0] = pos(i, 0);
+        pos_vec[i][1] = pos(i, 1);
+    }
+    KDTree tree(pos_vec);
     auto end = std::chrono::high_resolution_clock::now();
     std::cerr << "Time for preparing the tree: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
 
     start = std::chrono::high_resolution_clock::now();
-    std::cout<< "pos.size() = " << pos.size() << std::endl;
+    std::cout<< "pos_vec.size() = " << pos_vec.size() << std::endl;
 #pragma omp parallel for num_threads(10)
-    for (unsigned int i = 0; i < pos.size(); i++)
+    for (unsigned int i = 0; i < pos_vec.size(); i++)
     {
-        // tree record all coordinates, pass particleFluid coordinates for fluid paritcles only
-        // std::cout << "pos[i].size() = " << pos[i].size() << std::endl;
-        nearIndex[i] = (tree.neighborhood_indices(pos[i], nearDist[i], c.radius));
-        // std::cout << "nearIndex[i].size() = " << nearIndex[i].size() << std::endl;
+        nearIndex[i] = (tree.neighborhood_indices(pos_vec[i], nearDist[i], c.radius));
     }
     end = std::chrono::high_resolution_clock::now();
-    std::cerr << "Time for finding NN: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1e6 << "ms\n";
-    // std::cout << "\ttime for nearest neigbour search: " << end_time - start_time << "\n";
+    std::cerr << "Time for finding NN: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1e6 << " seconds\n";
 }

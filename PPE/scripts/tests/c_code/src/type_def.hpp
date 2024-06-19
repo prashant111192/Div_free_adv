@@ -1,6 +1,8 @@
 #include <chrono>
+#include <Eigen/Dense>
 #define data_type double // data type for the particles // Need double for Knn, change accordingly. 
 
+using namespace Eigen;
 #pragma once
 
 
@@ -21,3 +23,6 @@ struct constants
     data_type Eta;
     data_type radius; // kh, radius of influence
 };
+
+
+typedef Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> MatrixXX;

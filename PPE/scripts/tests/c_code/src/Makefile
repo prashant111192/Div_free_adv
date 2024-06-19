@@ -20,9 +20,9 @@ else
 endif
 
 ifeq ($(USE_DEBUG), YES)
-	CXXFLAGS=-g -Wall
+	CXXFLAGS=-g -Wall -I ./eigen/
 else
-	CXXFLAGS=-O3
+	CXXFLAGS=-O3 -I ./eigen
 	ifeq ($(USE_FAST_MATH), YES)
 		CXXFLAGS+=-ffast-math
 		endif
@@ -41,7 +41,7 @@ OBJECTS=$(SRC:.cpp=.o)
 $(shell, mkdir -p $(EXECS_DIR))
 
 all: $(EXECS_DIR)/$(EXEC_FILE)
-	rm -rf $(OBJECTS)
+	# rm -rf $(OBJECTS)
 
 ifeq ($(USE_DEBUG), YES)
 	@echo "Debug mode"

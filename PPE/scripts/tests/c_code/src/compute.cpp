@@ -1,4 +1,5 @@
 #include "compute.hpp"
+#include <iostream>
 inline void scale_vector(const std::vector<data_type>& input, std::vector<data_type>& output, const data_type scale) {
     std::transform(input.begin(), input.end(), output.begin(),
                    [scale](data_type x) { return x * scale; });
@@ -17,53 +18,59 @@ inline void add_vector(const std::vector<data_type>& input1, const std::vector<d
                    [](data_type x, data_type y) { return x + y; });
 }
 
-std::vector <data_type> gradient_poly6(const data_type &distance, const data_type kh, const std::vector<data_type> &r_ij)
+MatrixXX gradient_poly6(const data_type &distance, const data_type kh, const MatrixXX &r_ij)
 {
-    std::vector <data_type> grad(2,0);
+    MatrixXX grad(2,1);
+    grad.fill(0);
     data_type h1 = 1/kh;
     auto fac = (4*h1*h1*h1*h1*h1*h1*h1*h1)*(M_1_PI);
     auto temp = kh*kh - distance*distance;
     if (0 < distance && distance <= kh)
     {
         auto temp_2 = fac*(-6)*temp*temp;
-        scale_vector(r_ij, grad, temp);
+        grad = r_ij * temp_2;
     }
-
     return grad;
 }
-void calc_divergence(const std::vector<std::vector<data_type>> &pos,
-                const std::vector<std::vector<data_type>> &vel,
-                const std::vector<data_type> &density,
-                const std::vector<int> &p_type,
+
+void calc_divergence(const MatrixXX &pos,
+                const MatrixXX &vel,
+                const MatrixXX &density,
+                const MatrixXi &p_type,
                 const std::vector<std::vector<unsigned int>> &nearIndex,
                 const std::vector<std::vector<double>> &nearDist,
-                std::vector<data_type> &divergence,
+                MatrixXX &divergence,
                 const constants &c)
 {
     
-#pragma omp parallel for num_threads(10)
-    for(unsigned int i = 0; i<pos.size(); i++)
+// #pragma omp parallel for num_threads(10)
+    for(unsigned int i = 0; i<c.n_particles; i++)
     {
-        if (p_type[i] == 1) // if Fluid particle
+        if (p_type(i) == 1) // if Fluid particle
         {
             for(unsigned int j=0; j<nearIndex[i].size(); j++)
             {
                if (nearDist[i][j]>0 && nearDist[i][j]<=c.radius)
             //    if (nearDist[i][j]>0 && nearDist[i][j]<=c.radius && p_type[nearIndex[i][j]] == 1)
-               {
-                   std::vector<data_type> r_ij(2,0);
-                   std::vector<data_type> weight(2,0);
-                   std::vector<data_type> v_ji(2,0);
+                {
+                    MatrixXX r_ij(2,1);
+                    MatrixXX weight(2,1);
+                    weight.fill(0);
+                    MatrixXX v_ji(2,1);
 
-                   sub_vector(pos[i], pos[nearIndex[i][j]], r_ij);
-                   sub_vector(vel[nearIndex[i][j]], vel[i], v_ji); // v_j - v_i and store in temp
-                   weight = gradient_poly6(nearDist[i][j], c.radius, r_ij);
-                   data_type temp = std::inner_product(weight.begin(), weight.end(), v_ji.begin(), 0.0);
-                   temp = temp*c.mass*nearDist[i][j]/(nearDist[i][j]+c.Eta);
-                   divergence[i] += temp;
-               }
+                    r_ij = pos.row(i) - pos.row(nearIndex[i][j]);
+                    v_ji = vel.row(nearIndex[i][j]) - vel.row(i);
+                    weight = gradient_poly6(nearDist[i][j], c.radius, r_ij);
+                    data_type temp = weight.col(0).dot(v_ji.col(0));
+                    std::cout<< pos.row(i) << "\t" << pos.row(nearIndex[i][j]) <<"\t" << r_ij<< "weight: " << weight 
+                                << "\ttemp: "<<temp<<  std::endl;
+
+                    // temp = temp*c.mass*nearDist[i][j]/(nearDist[i][j]+c.Eta);
+                    temp = temp*c.mass*nearDist[i][j]/(nearDist[i][j]);
+                    divergence(i) += temp;
+                }
             }
-            divergence[i] = divergence[i]/density[i];
+            divergence(i) = divergence(i)/density(i);
         }
     }
 }

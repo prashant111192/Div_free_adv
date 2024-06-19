@@ -5,7 +5,7 @@
 
 
 void initialise_NN(constants &c,
-                 std::vector<std::vector<data_type>> &pos,
+                 MatrixXX &pos,
                  std::vector<std::vector<unsigned int>> &nearIndex, 
                  std::vector<std::vector<double>> &nearDist);
 

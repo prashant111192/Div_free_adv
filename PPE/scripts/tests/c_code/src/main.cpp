@@ -3,13 +3,14 @@
 #include <chrono>
 #include <fstream>
 
-
 #include "type_def.hpp"
 #include "in_out.hpp"
 #include "NN.hpp"
 #include "compute.hpp"
 
+
 using namespace std;
+using namespace Eigen;
 
 constants define_constants(data_type size, data_type dp, data_type boundary_fac)
 {
@@ -32,22 +33,24 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac)
     return c;
 }
 
-void make_particles(const constants &c, vector<vector<data_type>> &pos, vector<vector<data_type>> &vel, vector<data_type> &density, vector<int> &p_type)
+void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, MatrixXi &p_type)
 {
     for (unsigned int i = 0; i < c.resolution; i++)
     {
         for (unsigned int j = 0; j < c.resolution; j++)
         {
             unsigned int index = i * c.resolution + j;
-            pos[index] = {c.x_y_bn + (c.dp * i), c.x_y_bn + (c.dp * j)};
+            pos(index, 0) = c.x_y_bn + (c.dp * i);
+            pos(index, 1) = c.x_y_bn + (c.dp * j);
 
-            if (pos[index][0] < c.x_y_n || pos[index][0] > c.x_y_p || pos[index][1] < c.x_y_n || pos[index][1] > c.x_y_p)
+            if (pos(index,0) < c.x_y_n || pos(index,0) > c.x_y_p || pos(index,1) < c.x_y_n || pos(index,1) > c.x_y_p) 
             {
-                p_type[index] = 0; // p_type ==0 =>Boundary particle
+                p_type(index) = 0; // p_type ==0 =>Boundary particle
             }
-            if (pos[index][0] > 0 && pos[index][1] > 0 && pos[index][0] < c.x_y_p * 0.5 && pos[index][1] < c.x_y_p * 0.5)
+            if (pos(index,0) > 0 && pos(index,1) > 0 && pos(index,0) < c.x_y_p * 0.5 && pos(index,1) < c.x_y_p * 0.5)
             {
-                vel[index] = {0.05, 0.05};
+                vel(index, 0) = 0.05;
+                vel(index, 1) = 0.05;
             }
         }
     }
@@ -75,17 +78,26 @@ int main()
     auto start = std::chrono::high_resolution_clock::now();
     std::cout << "Let's do this!!" << std::endl;
     data_type size = 1;
-    data_type dp = 0.001;
+    data_type dp = 0.004;
     auto boundary_fac = 12;
     constants c = define_constants(size, dp, boundary_fac);
 
     print_constants(c);
-    std::vector<std::vector<data_type>> pos(c.n_particles, std::vector<data_type>(2, 0));
-    std::vector<std::vector<data_type>> vel(c.n_particles, std::vector<data_type>(2, 0));
-    vector<data_type> density(c.n_particles, 1000);
-    vector<int> p_type(c.n_particles, 1);
-    data_type mass = density[0] * dp * dp;
+    
+    MatrixXX pos(c.n_particles, 2);
+    MatrixXX vel(c.n_particles, 2);
+    MatrixXX density(c.n_particles, 1);
+    MatrixXi p_type(c.n_particles, 1);
+    p_type.fill(1);
+    data_type mass = density(0) * dp * dp;
+
     make_particles(c, pos, vel, density, p_type);
+
+    // // std::vector<std::vector<data_type>> pos(c.n_particles, std::vector<data_type>(2, 0));
+    // // std::vector<std::vector<data_type>> vel(c.n_particles, std::vector<data_type>(2, 0));
+    // // vector<data_type> density(c.n_particles, 1000);
+    // vector<int> p_type(c.n_particles, 1);
+    // make_particles(c, pos, vel, density, p_type);
     std::vector<std::vector<double>> nearDist(c.n_particles);         // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
     std::vector<std::vector<unsigned>> nearIndex(c.n_particles); // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
     initialise_NN(c, pos, nearIndex, nearDist);
@@ -98,29 +110,36 @@ int main()
         }
     }
     std::cout << "Maximum number of NN: "<< count << std::endl;
-    // DIVERGENCE
-    std::vector<data_type> divergence(c.n_particles, 0);
+    // // DIVERGENCE
+    MatrixXX divergence(c.n_particles, 1);
+    divergence.fill(0);
+    std::cout<< "vel(0) :" << vel.row(0) << std::endl;
+    std::cout<< vel.row(0)-vel.row(1) << std::endl;
     calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, c);
+    // std::vector<data_type> divergence(c.n_particles, 0);
+    // calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, c);
 
-    save_data(p_type, "p_type.csv");
-    save_data(divergence, "divergence.csv");
-    save_data(pos, "pos.csv");
-    save_data(vel, "vel.csv");
-    std::cout << "resolution: " << c.resolution << std::endl;
-    std::cout << "n_particles: " << c.n_particles << std::endl;
+    // save_data(p_type, "p_type.csv");
+    // save_data(divergence, "divergence.csv");
+    // save_data(pos, "pos.csv");
+    // save_data(vel, "vel.csv");
+    // std::cout << "resolution: " << c.resolution << std::endl;
+    // std::cout << "n_particles: " << c.n_particles << std::endl;
+    // size_t total_NN;
+    // size_t NN_i= 0;
+    // for (unsigned int i = 0; i < c.n_particles; i++)
+    // {
+    //     NN_i += nearIndex[i].capacity();
+    // }
+    // total_NN = NN_i * sizeof(unsigned int);
+    // std::cout << "Total memory used for NN_index: " << total_NN/(1024*1024) << " Mbytes" << std::endl;
+    // total_NN = NN_i * sizeof(data_type);
+    // std::cout << "Total memory used for NN_distance: " << total_NN/(1024*1024) << " Mbytes" << std::endl;
+    // std::cout<< "size of double: " << sizeof(data_type) << "and size of unsigned int: " << sizeof(unsigned int) << std::endl;
+    divergence = divergence.array().abs();
+    std::cout<< "Max Divergence: "<< divergence.maxCoeff() << std::endl;
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);\
-    size_t total_NN;
-    size_t NN_i= 0;
-    for (unsigned int i = 0; i < c.n_particles; i++)
-    {
-        NN_i += nearIndex[i].capacity();
-    }
-    total_NN = NN_i * sizeof(unsigned int);
-    std::cout << "Total memory used for NN_index: " << total_NN/(1024*1024) << " Mbytes" << std::endl;
-    total_NN = NN_i * sizeof(data_type);
-    std::cout << "Total memory used for NN_distance: " << total_NN/(1024*1024) << " Mbytes" << std::endl;
-    std::cout<< "size of double: " << sizeof(data_type) << "and size of unsigned int: " << sizeof(unsigned int) << std::endl;
     std::cout << "Time taken by function: "
          << duration.count()/1e6 << " seconds" << std::endl;
 
