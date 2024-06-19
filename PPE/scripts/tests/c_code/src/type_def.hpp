@@ -1,5 +1,5 @@
 #include <chrono>
-#define data_type float // data type for the particles
+#define data_type double // data type for the particles // Need double for Knn, change accordingly. 
 
 #pragma once
 

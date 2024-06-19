@@ -8,6 +8,7 @@ NO_FLAGS=NO
 USE_DEBUG=NO
 USE_FAST_MATH=YES
 USE_NATIVE_CPU_OPTIMIZATION=YES
+USE_PARALLEL=YES
 
 
 #==============================================================================
@@ -27,6 +28,9 @@ else
 		endif
 	ifeq ($(USE_NATIVE_CPU_OPTIMIZATION), YES)
 		CXXFLAGS+=-march=native
+	endif
+	ifeq ($(USE_PARALLEL), YES)
+		CXXFLAGS+=-fopenmp
 	endif
 endif
 

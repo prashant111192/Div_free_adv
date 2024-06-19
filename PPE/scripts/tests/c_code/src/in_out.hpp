@@ -1,9 +1,24 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
-#include <string>   
+#include <string>
+#include <type_traits>
 
 using namespace std;
+
+template <typename T>
+int getDimension(const std::vector<T> &)
+{
+    return 1;
+}
+
+// Recursive case for higher-dimensional vectors
+template <typename T>
+int getDimension(const std::vector<std::vector<T>> &vec)
+{
+    return 1 + getDimension(vec[0]);
+}
+
 template <typename ele_type>
 ostream &operator<<(ostream &os, const vector<ele_type> &vect_name)
 {
@@ -15,33 +30,81 @@ ostream &operator<<(ostream &os, const vector<ele_type> &vect_name)
 }
 
 template <typename T>
+void write_file(std::vector<std::vector<T>> x, string filename)
+{
+
+    fstream file;
+    file.open(filename, ios::out);
+    std::cout << "2D vector" << endl;
+    for (int i = 0; i < x.size(); i++)
+    {
+        for (int j = 0; j < x[i].size(); j++)
+        {
+            file << x[i][j];
+            if (j<x[i].size()-1)
+            {
+                file << ",";
+            }
+        }
+        file << endl;
+    }
+    file.close();
+}
+
+template <typename T>
+void write_file(std::vector<T> x, string filename)
+{
+    fstream file;
+    file.open(filename, ios::out);
+    std::cout << "1D vector" << endl;
+    for (int i = 0; i < x.size(); i++)
+    {
+        file << x[i] << endl;
+    }
+    file.close();
+}
+
+template <typename T>
 void save_data(T x, string filename)
 {
     // save the vector as a csv file
     // x: vector to be saved, can be 1D or 2D
     // filename: name of the file to be saved
-    ofstream file;
-    file.open(filename);
+    int dim = getDimension(x);
+    std::cout << "Dimension: " << dim << endl;
     if (x.size() == 0)
     {
-        file << "Empty vector" << endl;
-    }
-    else if (x[0].size() == 0)
-    {
-        for (int i = 0; i < x.size(); i++)
-        {
-            file << x[i] << endl;
-        }
+        std::cout << "Empty vector" << endl;
     }
     else
     {
-        for (int i = 0; i < x.size(); i++)
+        std::cout<< x.size() << " value" << x[0]<< std::endl;
+        if (dim == 2)
         {
-            for (int j = 0; j < x[i].size(); j++)
-            {
-                file << x[i][j] << ",";
-            }
-            file << endl;
+            write_file(x, filename);
+        }
+        if (dim == 1)
+        {
+            write_file(x, filename);
         }
     }
 }
+
+// using namespace std;
+// template <typename T>
+// int getDimension(const std::vector<T> &);
+
+// template <typename T>
+// int getDimension(const std::vector<std::vector<T>> &vec);
+
+// template <typename ele_type>
+// ostream &operator<<(ostream &os, const vector<ele_type> &vect_name);
+
+// template <typename T>
+// void write_file(std::vector<std::vector<T>> x, string filename);
+
+// template <typename T>
+// void write_file(std::vector<T> x, string filename);
+
+// template <typename T>
+// void save_data(T x, string filename);
