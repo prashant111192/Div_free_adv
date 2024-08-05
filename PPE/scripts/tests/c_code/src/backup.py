@@ -48,45 +48,6 @@ def make_particles(length =1, boundary_fac = 40, dp=0.008):
     print(f'Number of particles: {len(pos)}')
     return pos, velocity, density, mass, p_type, kh, h, mid
 
-def make_particles_1(length =1, boundary_fac = 40, dp=0.008):
-    boundary_width = dp*boundary_fac # meters
-
-    x1 = -length/2 - boundary_width/2
-    x2 = length/2 + boundary_width/2
-    y1 = -length/2 - boundary_width/2
-    y2 = length/2 + boundary_width/2
-
-    resolution = int((length+boundary_width)/dp)
-    pos = np.zeros((resolution**2,2), dtype=np.float32)
-    density = np.ones((resolution**2), dtype=np.float32)
-    density = density * 1000
-    velocity = np.zeros((resolution**2,2), dtype=np.float32)
-    mass = density[1]*dp**2
-    p_type = np.zeros((resolution**2), dtype=np.float32)
-
-    count = 0
-    for i in range(resolution):
-        for j in range(resolution):
-            pos[count] = np.array([(x1+(dp*i)),(y1+(dp*j))], dtype=np.float32)
-            if x1+boundary_width/2<(x1+(dp*i))<x2-dp-boundary_width/2 and y1+boundary_width/2<(y1+(dp*j))<y2-dp-boundary_width/2:
-                p_type[count] = 1 # Fluid particle
-                # velocity[count] = np.array([math.sin(pos[count][0])*0.01,math.cos(pos[count][1])*0.01])
-                if pos[count][0] > 0 and pos[count][1] > 0 and pos[count][0] < length * 0.15 and pos[count][1] < length * 0.15:
-                    velocity[count] = np.array([0.05,0.05], dtype=np.float32)
-            count += 1
-    
-    # h = 0.008660
-    h_const = 0.02 
-    dp_const = 0.008
-    h_fac = h_const/dp_const
-    h = h_fac * dp
-
-    kh = h*2
-    mid = ((resolution*resolution/2 ))    
-    mid = int(mid)
-    print(f'Number of particles: {len(pos)}')
-    return pos, velocity, density, mass, p_type, kh, h, mid
-
 def poly6(kh, distance):
     h = kh
     # h = kh/2
@@ -173,8 +134,6 @@ def calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type):
     pool.join()
     for i, div in results:
         divergence[i] = div
-    
-    print(f'total abs sum of divergence: {np.sum(np.abs(divergence))}')
     return divergence
 
 def gradient_poly6(r_ij, distance, kh):
@@ -184,8 +143,7 @@ def gradient_poly6(r_ij, distance, kh):
     temp = h**2 - distance**2
     grad = np.zeros(2, dtype=np.float32)
     if 0 < distance <= h:
-        # temp_2 = fac * 3*((temp)**2)*(-2*distance) / distance
-        temp_2 = fac * (-6)*((temp)**2)
+        temp_2 = fac * 3*((temp)**2)*(-2*distance) / distance
         grad = temp_2 * r_ij
 
         return grad
@@ -267,13 +225,14 @@ def calc_non_div_vel(pos, q, density, mass, kh, NN_idx, ker_grad_array_x, ker_gr
     return grad_q
 
 def div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure, n_part, weights_lap, weights_grad_x, weights_grad_y):
-    # h = kh
-    # h1 = 1/h
+    h = kh
+    h1 = 1/h
+    # print('started allocating memory')
+    start = time.time()
     A_mat = sp.lil_matrix((n_part, n_part), dtype=np.float32)
     b_mat = np.zeros(n_part, dtype=np.float32)
-    # start = time.time()
     # b_mat = sp.lil_matrix(1, n_part)
-    # end = time.time()
+    end = time.time()
     # A_mat = np.zeros((n_part, n_part))
     # b_mat = np.zeros(n_part)
     # start = time.time()
@@ -283,9 +242,9 @@ def div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure
     args = [(i, pos, vel, density, mass, NN_idx, p_type, kh, n_part, weights_lap, weights_grad_x, weights_grad_y) for i in range(n_part)]
     pool = mp.Pool((mp.cpu_count()-6))
     # pool = mp.Pool(6)
-    # start = time.time()
+    start = time.time()
     results = pool.map(div_part_vel_part, args)
-    # end = time.time()
+    end = time.time()
     # print(f'Time taken to calculate A and b: {end-start} s')
 
     # for i in range(n_part):
@@ -308,14 +267,7 @@ def div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure
         b_mat[i] = b_mat_
 
     
-    np.savetxt("b_mat.csv", b_mat, delimiter=",")
-    print(f' Number of stored values in A: {A_mat.count_nonzero}')
-    temmpp = A_mat.multiply(A_mat).sum()
-    print(f'test_A: {temmpp}')
-    temmpp = (b_mat*b_mat).sum()
-    print(f'test_b: {temmpp}')
-    # exit(0)
-    x = cg(A_mat, b_mat, atol = 1e-5)
+    x = cg(A_mat, b_mat, atol = 1e-8)
     div_vel_comp, cg_success = np.array(x[0], dtype=np.float32), x[1]
     if cg_success != 0:
         print('CG did not converge')
@@ -329,7 +281,6 @@ def div_part_vel_part(arg):
     A_mat =np.zeros(n_part, dtype=np.float32)
     b_mat = 0
     if p_type[i] == 0:
-        A_mat = sp.lil_matrix(A_mat, dtype=np.float32)
         return i, A_mat, b_mat
 
     temp_ii= 0.0
@@ -383,7 +334,7 @@ def lap_poly6(r_ij, distance, kh):
     fac = (4*h1**8)/(np.pi)
     temp = h**2 - distance**2
     lap = 0.0
-    if 0 < distance and distance <= h:
+    if 0 < distance <= h:
         temp_2 = fac * (3 *(2 * temp *(4 *distance**2) + (temp * temp)*(-2)))
         # temp_2 = temp_2 
         lap = temp_2
@@ -392,18 +343,14 @@ def lap_poly6(r_ij, distance, kh):
         return lap
 
 
-def abs_sum(sp_mat):
-    for i in range(len(sp_mat)):
-        for j in range(len(sp_mat[i])):
-            sp_mat[i,j] = abs(sp_mat[i,j])
-    return sp_mat
+
 
 
 def main():
     start = time.time()
     plt.rcParams['figure.dpi'] = 600
     plt.rcParams['savefig.dpi'] = 600
-    length = 3
+    length = 1
     boundary_fac = 10
     dp = 0.04
     # dp = 0.006
@@ -413,41 +360,31 @@ def main():
     kh = radius_
     end = time.time()
     print(f'Time taken to make particles: {end-start} s')
+    # exit()
     # radius_ = h*
     plot_velocity_vec(pos, vel, 'start')
     plot_prop(pos, p_type, 'p_type')
-
     nbrs = NN.NearestNeighbors(radius=radius_, algorithm='kd_tree').fit(pos)
     NN_idx = nbrs.radius_neighbors(pos)[1]
     print(f'max number of neighbors: {np.max([len(idx) for idx in NN_idx])}')
-    print(f'total number of neighbors: {np.sum([len(idx) for idx in NN_idx])}')
-    print(f'average number of neighbors: {np.mean([len(idx) for idx in NN_idx])}')
-
+    # print(f'average number of neighbors: {np.mean([len(idx) for idx in NN_idx])}')
     start = time.time()
-
     print('started calculating kernels')
     ker_grad_array_x, ker_grad_array_y = ker_grad_arr(pos, kh, NN_idx)
+    print('grad')
+    # print(ker_grad_array[0,0,:])
     ker_lap_array = ker_lap_arr(pos, kh, NN_idx)
+    print('lap')
+    print(ker_lap_array[0,0])
     end = time.time()
-    
-    print(f'abs_sum_grad_x: {ker_grad_array_x.multiply(ker_grad_array_x).sum()}')
-    print(f'Time taken to calculate kernels: {end-start} s')
-    # test__ = (ker_lap_array.multiply(ker_lap_array)).sum()
-    # print(f'test_lap: {test__}')
-    print(ker_grad_array_x.sum())
-    print(F'TRACE of ker_grad_array_x: {ker_grad_array_x.sum()}')
-    # print(f' abs_sum ={abs_sum(ker_grad_array_x).sum()}')
-    # print(f'max_grad_x: {ker_grad_array_x.max()}')
-    # print('lap')
-    # print(f'Number of non0 in gradx: {ker_grad_array_x.count_nonzero}, in grady: {ker_grad_array_y.count_nonzero}, in lap: {ker_lap_array.count_nonzero}, in lap: {ker_lap_array.count_nonzero}')
+    # print(f'Time taken to calculate kernels: {end-start} s')
     # plot_prop(pos, density, 'density')
     # density_new = calc_density(pos, mass, kh, NN_idx, Eta, density, p_type)
     # plot_prop(pos, density_new, 'density_new')
     # temp = (density-density_new)*100/density
     # plot_prop(pos, temp, 'per_cent_density_diff')
     div = calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type)
-    print(f'max_div:{np.max(np.abs(div))}:div_sum:{np.sum(div)}')
-
+    # print(f'max_div:{np.max(np.abs(div))}:div_sum:{np.sum(div)}')
     plot_prop(pos, div, 'divergence_ini')
     vel = pressure_possion(pos, vel, density, mass, kh, NN_idx, Eta, div, p_type, ker_lap_array, ker_grad_array_x, ker_grad_array_y)
     plot_velocity_vec(pos, vel, 'end')
@@ -466,20 +403,11 @@ def ker_grad_arr(pos, kh, NN_idx):
     results = pool.map(ker_grad_arr_part, args)
     pool.close()
     pool.join()
-    tt = 0
     for i, weights in results:
         for ji, j in enumerate(NN_idx[i]):
-            tt = tt+weights_x[i,j]
             weights_x[i, j] = weights[ji, 0]
             weights_y[i, j] = weights[ji, 1]
     print(f'done')
-    test = (abs(weights_x)).sum()
-    # test = abs(weights_x).sum
-    # test = (weights_x.multiply(weights_x)).sum()
-    print(f'sum of grad_x: {tt}')
-    print(f'test_x: {test}')
-    test = (weights_y.multiply(weights_y).divide(abs(weights_y))).sum()
-    print(f'test_y: {test}')
     # for i in range(len(pos)):
     #     for j in NN_idx[i]:
     #         r_ij = pos[i] - pos[j]
@@ -497,11 +425,9 @@ def ker_grad_arr_part(arg):
     # weights = np.zeros((len(NN_idx[i]),2), dtype=np.float32)
 
     for ij, j in enumerate(NN_idx[i]):
-        if i == j:
-            continue
         r_ij = pos[i] - pos[j]
         distance = np.linalg.norm(r_ij)
-        if distance <= kh and distance > 0.0:
+        if distance < kh and distance > 0.0:
             weights[ij] = gradient_poly6(r_ij, distance, kh)
             # weights[i,j,:] = temp
     
@@ -514,7 +440,7 @@ def ker_lap_arr(pos, kh, NN_idx):
         for j in NN_idx[i]:
             r_ij = pos[i] - pos[j]
             distance = np.linalg.norm(r_ij)
-            if distance <= kh and distance > 0.0:
+            if distance < kh and distance > 0.0:
                 temp = lap_poly6(r_ij, distance, kh)
                 weights[i,j] = temp
     return weights

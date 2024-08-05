@@ -1,5 +1,27 @@
 #include "in_out.hpp"
 
+void print_constants(constants c)
+{
+    std::cout<< "=====================\n";
+    std::cout<< "Printing constants" << std::endl;
+    std::cout << "h: " << c.h << std::endl;
+    std::cout << "dp: " << c.dp << std::endl;
+    std::cout << "h_fac: " << c.h_fac << std::endl;
+    std::cout << "mass: " << c.mass << std::endl;
+    std::cout << "boundary_size: " << c.boundary_size << std::endl;
+    std::cout << "x_y_bn: " << c.x_y_bn << std::endl;
+    std::cout << "x_y_bp: " << c.x_y_bp << std::endl;
+    std::cout << "x_y_n: " << c.x_y_n << std::endl;
+    std::cout << "x_y_p: " << c.x_y_p << std::endl;
+    std::cout << "resolution: " << c.resolution << std::endl;
+    std::cout << "n_particles: " << c.n_particles << std::endl;
+    std::cout << "mid_idx: " << c.mid_idx << std::endl;
+    std::cout << "Eta: " << c.Eta << std::endl;
+    std::cout << "radius: " << c.radius << std::endl;
+    std::cout << "ker_fac: " << c.ker_fac << std::endl;
+    std::cout<< "=====================\n";
+}
+
 // template <typename T>
 // int getDimension(const std::vector<T> &)
 // {

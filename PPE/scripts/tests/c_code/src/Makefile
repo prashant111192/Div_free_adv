@@ -5,7 +5,7 @@ EXEC_FILE=run.out
 #==============================================================================
 # Compilation options (YES/NO)
 NO_FLAGS=NO
-USE_DEBUG=NO
+USE_DEBUG=YES
 USE_FAST_MATH=YES
 USE_NATIVE_CPU_OPTIMIZATION=YES
 USE_PARALLEL=YES

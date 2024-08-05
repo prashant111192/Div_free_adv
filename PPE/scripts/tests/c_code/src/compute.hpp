@@ -6,37 +6,41 @@
 #include <algorithm>
 #include "type_def.hpp"
 #include "in_out.hpp"
+#include "kernel.hpp"
 
 
 
-MatrixXX gradient_poly6(const data_type &distance, const data_type kh, const MatrixXX &r_ij);
-
-data_type lap_poly6(const data_type distance,
-                    const data_type kh);
 
 void calc_divergence(const MatrixXX &pos,
-                MatrixXX &vel,
+                const MatrixXX &vel,
                 const MatrixXX &density,
-                const MatrixXi &p_type,
+                const Eigen::MatrixXi &p_type,
                 const std::vector<std::vector<unsigned int>> &nearIndex,
-                const std::vector<std::vector<double>> &nearDist,
+                const std::vector<std::vector<data_type>> &nearDist,
                 MatrixXX &divergence,
+                const Eigen::SparseMatrix<data_type> &gradient_x,
+                const Eigen::SparseMatrix<data_type> &gradient_y,
                 const constants &c);
 
 void pressure_poisson(const MatrixXX &pos,
                 MatrixXX &vel,
                 const MatrixXX &density,
-                const MatrixXi &p_type,
+                const Eigen::MatrixXi &p_type,
                 const std::vector<std::vector<unsigned int>> &nearIndex,
-                const std::vector<std::vector<double>> &nearDist,
+                const std::vector<std::vector<data_type>> &nearDist,
                 MatrixXX &divergence,
+                const Eigen::SparseMatrix<data_type> &gradient_x,
+                const Eigen::SparseMatrix<data_type> &gradient_y,
+                const Eigen::SparseMatrix<data_type> &laplacian,
                 const constants &c);
 
 MatrixXX cal_div_part_vel(const MatrixXX &pos,
                 const MatrixXX &density,
-                const MatrixXi &p_type,
+                const Eigen::MatrixXi &p_type,
                 const std::vector<std::vector<unsigned int>> &nearIndex,
-                const std::vector<std::vector<double>> &nearDist,
+                const std::vector<std::vector<data_type>> &nearDist,
                 const MatrixXX &p,
+                const Eigen::SparseMatrix<data_type> &gradient_x,
+                const Eigen::SparseMatrix<data_type> &gradient_y,
                 const constants &c);
 #endif

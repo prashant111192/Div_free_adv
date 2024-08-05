@@ -3,9 +3,9 @@
 #include <chrono>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <iostream>
 #define data_type double // data type for the particles // Need double for Knn, change accordingly. 
 
-using namespace Eigen;
 
 
 struct constants
@@ -24,9 +24,15 @@ struct constants
     unsigned int mid_idx;
     data_type Eta;
     data_type radius; // kh, radius of influence
+    data_type ker_fac;
 };
 
 
 typedef Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> MatrixXX;
+typedef Eigen::Vector<data_type, Eigen::Dynamic> VectorX;
 typedef Eigen::SparseMatrix<data_type> SpMatrixXX;
+
+constants define_constants(data_type size, data_type dp, data_type boundary_fac);
+void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type);
+
 #endif

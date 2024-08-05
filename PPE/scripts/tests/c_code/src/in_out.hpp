@@ -30,6 +30,9 @@ void writeMatrixToFile(T x, std::string filename)
     }
 }
 
+
+void print_constants(constants c);
+
 // template <typename T>
 // int getDimension(const std::vector<T> &)
 // {
