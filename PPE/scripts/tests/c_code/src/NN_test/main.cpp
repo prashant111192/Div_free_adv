@@ -1,22 +1,3 @@
-#ifndef NN_HPP
-#define NN_HPP
-#include "type_def.hpp"
-#include "KDTree.hpp"
-#include "kdtree.hpp"
-#include <vector>
-#include <omp.h>
-
-
-void initialise_NN(constants &c,
-                 MatrixXX &pos,
-                 std::vector<std::vector<unsigned int>> &nearIndex, 
-                 std::vector<std::vector<double>> &nearDist);
-
-void initialise_NN_2(constants &c,
-                 MatrixXX &pos,
-                 std::vector<std::vector<unsigned int>> &nearIndex, 
-                 std::vector<std::vector<double>> &nearDist); 
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -154,5 +135,3 @@ int main()
 
     return 0;
 }
-
-#endif

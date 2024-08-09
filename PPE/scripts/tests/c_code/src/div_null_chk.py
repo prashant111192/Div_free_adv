@@ -405,7 +405,7 @@ def main():
     plt.rcParams['savefig.dpi'] = 600
     length = 3
     boundary_fac = 10
-    dp = 0.04
+    dp = 0.4
     # dp = 0.006
     pos, vel, density, mass, p_type, kh, h, mid = make_particles(length, boundary_fac, dp)
     Eta = 1e-20

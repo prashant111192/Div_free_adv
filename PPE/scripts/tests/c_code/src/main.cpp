@@ -15,9 +15,9 @@ int main()
     auto start_complete = std::chrono::high_resolution_clock::now();
     auto start = std::chrono::high_resolution_clock::now();
     std::cout << "Let's do this!!" << std::endl;
-    data_type size = 3;
-    data_type dp = 0.04;
-    auto boundary_fac = 10;
+    data_type size = 8;
+    data_type dp = 1;
+    auto boundary_fac = 2;
     constants c = define_constants(size, dp, boundary_fac);
 
     print_constants(c);
