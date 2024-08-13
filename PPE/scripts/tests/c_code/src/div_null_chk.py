@@ -403,13 +403,13 @@ def main():
     start = time.time()
     plt.rcParams['figure.dpi'] = 600
     plt.rcParams['savefig.dpi'] = 600
-    length = 3
+    length = 390
     boundary_fac = 10
-    dp = 0.4
+    dp = 1
     # dp = 0.006
     pos, vel, density, mass, p_type, kh, h, mid = make_particles(length, boundary_fac, dp)
     Eta = 1e-20
-    radius_ = dp*5
+    radius_ = dp*3
     kh = radius_
     end = time.time()
     print(f'Time taken to make particles: {end-start} s')
@@ -419,6 +419,14 @@ def main():
 
     nbrs = NN.NearestNeighbors(radius=radius_, algorithm='kd_tree').fit(pos)
     NN_idx = nbrs.radius_neighbors(pos)[1]
+    # new_NN_idx = []
+    # for i in range(len(NN_idx)):
+    #     temp = []
+    #     for j in range(len(NN_idx[i])):
+    #         if i != j:
+    #             temp.append(NN_idx[i][j])
+    #     new_NN_idx.append(temp)
+    # NN_idx = new_NN_idx
     print(f'max number of neighbors: {np.max([len(idx) for idx in NN_idx])}')
     print(f'total number of neighbors: {np.sum([len(idx) for idx in NN_idx])}')
     print(f'average number of neighbors: {np.mean([len(idx) for idx in NN_idx])}')

@@ -15,34 +15,39 @@ int main()
     auto start_complete = std::chrono::high_resolution_clock::now();
     auto start = std::chrono::high_resolution_clock::now();
     std::cout << "Let's do this!!" << std::endl;
-    data_type size = 8;
+    data_type size = 90;
     data_type dp = 1;
-    auto boundary_fac = 2;
+    auto boundary_fac = 10;
     constants c = define_constants(size, dp, boundary_fac);
 
     print_constants(c);
 
-    MatrixXX pos(c.n_particles, 2);
-    MatrixXX vel(c.n_particles, 2);
-    MatrixXX density(c.n_particles, 1);
+    std::vector<std::vector<data_type>> pos(c.n_particles, std::vector<data_type>(2));
+    std::vector<std::vector<data_type>> vel(c.n_particles, std::vector<data_type>(2));
+    std::vector<data_type> density(c.n_particles);
+    std::vector<unsigned> p_type(c.n_particles);
+    // MatrixXX pos(c.n_particles, 2);
+    // MatrixXX vel(c.n_particles, 2);
+    // MatrixXX density(c.n_particles, 1);
     // std::vector<data_type> p_type(c.n_particles, 1);
-    Eigen::MatrixXi p_type(c.n_particles, 1);
+    // Eigen::MatrixXi p_type(c.n_particles, 1);
 
     make_particles(c, pos, vel, density, p_type);
     std::cout<< "total number of fluids: "<< p_type.sum() << std::endl;
 
-    std::vector<std::vector<double>> nearDist_(c.n_particles);    // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
-    std::vector<std::vector<unsigned>> nearIndex(c.n_particles); // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
-    initialise_NN(c, pos, nearIndex, nearDist_);
+    // std::vector<std::vector<double>> nearDist_(c.n_particles);    // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
     std::vector<std::vector<data_type>> nearDist(c.n_particles);
-    for (unsigned int i = 0; i < nearDist_.size(); i++)
-    {
-        nearDist[i].resize(nearDist_[i].size());
-        for (unsigned int j = 0; j < nearDist_[i].size(); j++)
-        {
-            nearDist[i][j] = nearDist_[i][j];
-        }
-    }
+    std::vector<std::vector<unsigned>> nearIndex(c.n_particles); // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
+    initialise_NN(c, pos, nearIndex, nearDist);
+    // basically just copying the nearDist_ to nearDist :::::: IDK why this is done
+    // for (unsigned int i = 0; i < nearDist_.size(); i++)
+    // {
+    //     nearDist[i].resize(nearDist_[i].size());
+    //     for (unsigned int j = 0; j < nearDist_[i].size(); j++)
+    //     {
+    //         nearDist[i][j] = nearDist_[i][j];
+    //     }
+    // }
     // std::vector<data_type> nearDist(nearDist_.begin(), nearDist_.end());
     
     // Finding the maximum number of NN
@@ -66,14 +71,15 @@ int main()
     std::cout << "Average number of NN: " << (float)total_NN/nearIndex.size() << std::endl;
 
     // Creating the GRADIENT and LAPLACIAN Matrix
+    std::cout<< "Size of count which is an int: "<< sizeof(count) << std::endl;
+    std::cout<< "size of char: " << sizeof(char) << " Byte"<< std::endl;
     start = std::chrono::high_resolution_clock::now();
     Eigen::SparseMatrix<data_type> gradient_x(c.n_particles, c.n_particles);
-    std::cout << "Size of gradient_x: " << gradient_x.nonZeros() << std::endl;
-    std::cout<< "Size of couit: "<< sizeof(count) << std::endl;
-    std::cout<< "Size of gradient_x:"<< sizeof(gradient_x) << std::endl;
+    std::cout << "No. of non zero in grad_x (in empy state): " << gradient_x.nonZeros() << std::endl;
+    std::cout<< "Size of gradient_x(in empy state) Byte:"<< sizeof(gradient_x) << std::endl;
     gradient_x.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
-    std::cout << "Size of gradient_x: " << gradient_x.nonZeros() << std::endl;
-    std::cout<< "Size of gradient_x:"<< sizeof(gradient_x) << std::endl;
+    std::cout << "No. of non zero in grad_x after reserve: " << gradient_x.nonZeros() << std::endl;
+    std::cout<< "Size of gradient_x after reserve (Byte):"<< sizeof(gradient_x) << std::endl;
     Eigen::SparseMatrix<data_type> gradient_y(c.n_particles, c.n_particles);
     gradient_y.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
     Eigen::SparseMatrix<data_type> laplacian(c.n_particles, c.n_particles);
@@ -81,8 +87,8 @@ int main()
 
     prepare_grad_lap_matrix(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
 
-    std::cout<< "Size of gradient_x:"<< sizeof(gradient_x) << std::endl;
-    std::cout << "Size of gradient_x: " << gradient_x.nonZeros() << std::endl;
+    std::cout<< "No. of non zero in grad_x after filling:"<< sizeof(gradient_x) << std::endl;
+    std::cout << "Size of gradient_x after filling (Byte): " << gradient_x.nonZeros() << std::endl;
     // data_type just_check = gradient_x.cwiseProduct(gradient_x).sum();
     // int numberOfNonZeroElements = gradient_x.nonZeros();
     // std::cout << "Number of non-zero elements in _X: " << numberOfNonZeroElements << std::endl;

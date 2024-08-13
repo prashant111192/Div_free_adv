@@ -17,7 +17,7 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac)
     c.n_particles = c.resolution * c.resolution;
     c.mid_idx = (int)((c.n_particles) / 2);
     c.Eta = 1e-12;
-    c.radius = 2 * dp; // kh, radius of influence
+    c.radius = 3 * dp; // kh, radius of influence
     c.ker_fac = 4 / (M_PI * pow(c.radius, 8));
 
     return c;

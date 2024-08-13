@@ -42,7 +42,7 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
     std::cout << "Size of gradient_x: " << gradient_x.nonZeros() << std::endl;
     data_type sum_temp = 0;
     data_type sum_temp_2 = 0;
-    data_type max = 10e-20;
+    data_type max = 1e-20;
     int count = 0;
     int count_nn = 0;   
     // for (unsigned int i = 0; i < 1; i++)
@@ -51,6 +51,7 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
         for (unsigned int j = 0; j < nearIndex[i].size(); j++)
         {
             count_nn += 1;
+            // DO i need this check now???
             if (nearDist[i][j] > 0 && nearDist[i][j] <= c.radius)
             {
                 count = count + 1;

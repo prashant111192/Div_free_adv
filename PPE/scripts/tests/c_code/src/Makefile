@@ -4,7 +4,7 @@ EXEC_FILE=run.out
 
 #==============================================================================
 # Compilation options (YES/NO)
-NO_FLAGS=NO
+USE_FLAGS=YES
 USE_DEBUG=YES
 USE_FAST_MATH=YES
 USE_NATIVE_CPU_OPTIMIZATION=YES
@@ -19,18 +19,21 @@ else
 	EXECS_DIR = ./../bin/release
 endif
 
+CXXFLAGS=-I ./eigen/
 ifeq ($(USE_DEBUG), YES)
-	CXXFLAGS=-g -Wall -I ./eigen/
+	CXXFLAGS+=-g -Wall 
 else
-	CXXFLAGS=-O3 -I ./eigen
-	ifeq ($(USE_FAST_MATH), YES)
-		CXXFLAGS+=-ffast-math
+	ifeq ($(USE_FLAGS), YES)
+		CXXFLAGS+=-O3 
+		ifeq ($(USE_FAST_MATH), YES)
+			CXXFLAGS+=-ffast-math
 		endif
-	ifeq ($(USE_NATIVE_CPU_OPTIMIZATION), YES)
-		CXXFLAGS+=-march=native
-	endif
-	ifeq ($(USE_PARALLEL), YES)
-		CXXFLAGS+=-fopenmp
+		ifeq ($(USE_NATIVE_CPU_OPTIMIZATION), YES)
+			CXXFLAGS+=-march=native
+		endif
+		ifeq ($(USE_PARALLEL), YES)
+			CXXFLAGS+=-fopenmp
+		endif
 	endif
 endif
 
@@ -43,29 +46,14 @@ $(shell, mkdir -p $(EXECS_DIR))
 all: $(EXECS_DIR)/$(EXEC_FILE)
 	# rm -rf $(OBJECTS)
 
-ifeq ($(USE_DEBUG), YES)
-	@echo "Debug mode"
-else
-	@echo "Release mode"
-endif
 
 # Rule to link the object files into the target executable
-ifeq ($(NO_FLAGS), YES)
-$(EXECS_DIR)/$(EXEC_FILE): $(OBJECTS)
-	$(CXX) -o $@ $(OBJECTS)
-else
 $(EXECS_DIR)/$(EXEC_FILE): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS)
-endif
 
 # Rule to compile source files into object files
-ifeq ($(NO_FLAGS), YES)
-%.o: %.cpp
-	$(CXX) -c $< -o $@
-else
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-endif
 
 # Rule to clean up generated files
 clean:

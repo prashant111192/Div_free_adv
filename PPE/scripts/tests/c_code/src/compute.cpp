@@ -14,9 +14,9 @@ void calc_divergence(const MatrixXX &pos,
 {
     
     divergence.fill(0);
-#pragma omp parallel for num_threads(10)
     int count_fluid = 0;
     data_type total_abs_div = 0;
+#pragma omp parallel for num_threads(10)
     for(unsigned int i = 0; i<c.n_particles; i++)
     {
         if (p_type(i) == 1) // if Fluid particle
