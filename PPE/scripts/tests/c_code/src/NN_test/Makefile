@@ -4,7 +4,7 @@ EXEC_FILE=run.out
 
 #==============================================================================
 # Compilation options (YES/NO)
-NO_FLAGS=NO
+USE_FLAGS=YES
 USE_DEBUG=YES
 USE_FAST_MATH=YES
 USE_NATIVE_CPU_OPTIMIZATION=YES
@@ -50,12 +50,12 @@ else
 endif
 
 # Rule to link the object files into the target executable
-ifeq ($(NO_FLAGS), YES)
-$(EXECS_DIR)/$(EXEC_FILE): $(OBJECTS)
-	$(CXX) -o $@ $(OBJECTS)
-else
+ifeq ($(USE_FLAGS), YES)
 $(EXECS_DIR)/$(EXEC_FILE): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS)
+else
+$(EXECS_DIR)/$(EXEC_FILE): $(OBJECTS)
+	$(CXX) -o $@ $(OBJECTS)
 endif
 
 # Rule to compile source files into object files

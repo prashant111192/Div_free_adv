@@ -15,24 +15,28 @@ int main()
     auto start_complete = std::chrono::high_resolution_clock::now();
     auto start = std::chrono::high_resolution_clock::now();
     std::cout << "Let's do this!!" << std::endl;
-    data_type size = 90;
+    data_type size = 100;
     data_type dp = 1;
-    auto boundary_fac = 10;
+    auto boundary_fac = 20;
     constants c = define_constants(size, dp, boundary_fac);
 
     print_constants(c);
 
-    std::vector<std::vector<data_type>> pos(c.n_particles, std::vector<data_type>(2));
-    std::vector<std::vector<data_type>> vel(c.n_particles, std::vector<data_type>(2));
-    std::vector<data_type> density(c.n_particles);
-    std::vector<unsigned> p_type(c.n_particles);
-    // MatrixXX pos(c.n_particles, 2);
-    // MatrixXX vel(c.n_particles, 2);
-    // MatrixXX density(c.n_particles, 1);
+    // std::vector<std::vector<data_type>> pos(c.n_particles, std::vector<data_type>(2));
+    // std::vector<std::vector<data_type>> vel(c.n_particles, std::vector<data_type>(2));
+    // std::vector<data_type> density(c.n_particles);
+    // std::vector<unsigned> p_type(c.n_particles);
+    MatrixXX pos(c.n_particles, 2);
+    MatrixXX vel(c.n_particles, 2);
+    MatrixXX density(c.n_particles, 1);
     // std::vector<data_type> p_type(c.n_particles, 1);
-    // Eigen::MatrixXi p_type(c.n_particles, 1);
+    Eigen::MatrixXi p_type(c.n_particles, 1);
+    MatrixXX normals(c.n_particles, 2);
+    normals.fill(0);
 
-    make_particles(c, pos, vel, density, p_type);
+    make_particles(c, pos, vel, density, p_type, normals);
+    writeMatrixToFile(pos, vel, "vel1.csv");
+    writeMatrixToFile(pos, normals, "normals.csv");
     std::cout<< "total number of fluids: "<< p_type.sum() << std::endl;
 
     // std::vector<std::vector<double>> nearDist_(c.n_particles);    // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
@@ -74,16 +78,22 @@ int main()
     std::cout<< "Size of count which is an int: "<< sizeof(count) << std::endl;
     std::cout<< "size of char: " << sizeof(char) << " Byte"<< std::endl;
     start = std::chrono::high_resolution_clock::now();
-    Eigen::SparseMatrix<data_type> gradient_x(c.n_particles, c.n_particles);
+    SpMatrixXX gradient_x(c.n_particles, c.n_particles);
+    // Eigen::SparseMatrix<data_type> gradient_x(c.n_particles, c.n_particles);
     std::cout << "No. of non zero in grad_x (in empy state): " << gradient_x.nonZeros() << std::endl;
     std::cout<< "Size of gradient_x(in empy state) Byte:"<< sizeof(gradient_x) << std::endl;
     gradient_x.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
     std::cout << "No. of non zero in grad_x after reserve: " << gradient_x.nonZeros() << std::endl;
     std::cout<< "Size of gradient_x after reserve (Byte):"<< sizeof(gradient_x) << std::endl;
-    Eigen::SparseMatrix<data_type> gradient_y(c.n_particles, c.n_particles);
+    // Eigen::SparseMatrix<data_type> gradient_y(c.n_particles, c.n_particles);
+    SpMatrixXX gradient_y(c.n_particles, c.n_particles);
     gradient_y.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
-    Eigen::SparseMatrix<data_type> laplacian(c.n_particles, c.n_particles);
+    SpMatrixXX laplacian(c.n_particles, c.n_particles);
+    // Eigen::SparseMatrix<data_type> laplacian(c.n_particles, c.n_particles);
     laplacian.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
+    data_type sum_temp = laplacian.sum();
+    std::cout<< "sum_temp(sum of laplacian): " << sum_temp << std::endl;
+
 
     prepare_grad_lap_matrix(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
 
@@ -118,7 +128,7 @@ int main()
     divergence.fill(0);
     calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
     // std::cout<< "max divergence: " << divergence.maxCoeff() << "\n";
-    writeMatrixToFile(divergence, "divergence.csv");
+    writeMatrixToFile(pos, divergence, "divergence.csv");
     // writeMatrixToFile(pos, "pos.csv");
     // writeMatrixToFile(vel, "vel.csv");
     // writeMatrixToFile(p_type, "p_type.csv");
@@ -128,15 +138,14 @@ int main()
     std::cout<< ">>Time taken for divergence: " << duration.count()/1e6 << " seconds\n";
 
     start = std::chrono::high_resolution_clock::now();
-    pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, c);
+    pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, normals, c);
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     std::cout<< ">>Time taken for pressure_poisson: " << duration.count()/1e6 << " seconds\n";
 
-    writeMatrixToFile(p_type, "p_type.csv");
-    writeMatrixToFile(divergence, "divergence.csv");
-    writeMatrixToFile(pos, "pos.csv");
-    writeMatrixToFile(vel, "vel.csv");
+    writeMatrixToFile(pos, p_type, "p_type.csv");
+    writeMatrixToFile(pos, divergence, "divergence_2.csv");
+    writeMatrixToFile(pos, vel, "vel2.csv");
     // std::cout << "resolution: " << c.resolution << std::endl;
     // std::cout << "n_particles: " << c.n_particles << std::endl;
     // size_t total_NN;

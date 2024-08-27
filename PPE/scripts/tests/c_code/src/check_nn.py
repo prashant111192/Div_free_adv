@@ -5,7 +5,7 @@ import sklearn.neighbors as NN
 
 def make_particles():
     # Number of particles
-    L = 100
+    L = 400
     N = L *L
 
     # Number of dimensions
@@ -19,12 +19,15 @@ def make_particles():
             count += 1
     return particles
 
-def find_nn(particles, radius):
+def find_nn(particles, r):
+    radius = r
+    # radius = r*r
     nn_list = []
     count = 0
     for i in range(0, len(particles)):
         # print(f"Finding neighbours for particle {i}")
         nn_local_list = []
+        # dist = ((particles[:, 0] - particles[i, 0])**2 + (particles[:, 1] - particles[i, 1])**2)
         dist = np.linalg.norm(particles - particles[i], axis=1)
         for j in range(len(particles)):
             if dist[j] <= radius and j != i:
@@ -42,10 +45,11 @@ def find_nn(particles, radius):
 def main():
 
     particle = make_particles()
-    nbrs = NN.NearestNeighbors(radius=3, algorithm='kd_tree').fit(particle)
+    rad = 3
+    nbrs = NN.NearestNeighbors(radius=rad, algorithm='kd_tree').fit(particle)
     NN_idx = nbrs.radius_neighbors(particle)[1]
     print(f'total number of neighbors using NN: {np.sum([len(idx) for idx in NN_idx])}')
-    nn_list = find_nn(particle, 3)
+    nn_list = find_nn(particle, rad)
 
 
 

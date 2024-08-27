@@ -17,13 +17,15 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac)
     c.n_particles = c.resolution * c.resolution;
     c.mid_idx = (int)((c.n_particles) / 2);
     c.Eta = 1e-12;
-    c.radius = 3 * dp; // kh, radius of influence
-    c.ker_fac = 4 / (M_PI * pow(c.radius, 8));
+    c.radius = 4 * dp; // kh, radius of influence
+    // c.radius = 12 * dp; // kh, radius of influence
+    c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
+    
 
     return c;
 }
 
-void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type)
+void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type, MatrixXX &normals)
 {
     p_type.fill(1); // all are fluid
     density.fill(1000); // density of water
@@ -40,11 +42,37 @@ void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
             if (pos(index, 0) < c.x_y_n || pos(index, 0) > c.x_y_p || pos(index, 1) < c.x_y_n || pos(index, 1) > c.x_y_p)
             {
                 p_type(index) = 0; // p_type ==0 =>Boundary particle
+
+                // make normals to the center  for the boundary particles
+                if (pos(index, 0) < c.x_y_n)
+                {
+                    normals(index, 0) = 1;
+                    // normals(index, 1) = 0;
+                }
+                if (pos(index, 0) > c.x_y_p)
+                {
+                    normals(index, 0) = -1;
+                    // normals(index, 1) = 0;
+                }
+                if (pos(index, 1) < c.x_y_n)
+                {
+                    // normals(index, 0) = 0;
+                    normals(index, 1) = 1;
+                }
+                if (pos(index, 1) > c.x_y_p)
+                {
+                    // normals(index, 0) = 0;
+                    normals(index, 1) = -1;
+                }
             }
-            if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < c.x_y_p * 0.15 && pos(index, 1) < c.x_y_p * 0.15)
+            else
             {
-                vel(index, 0) = 0.01;
-                vel(index, 1) = 0.01;
+                if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < 30 * c.dp && pos(index, 1) < c.dp * 30)
+                // if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < c.x_y_p * 0.15 && pos(index, 1) < c.x_y_p * 0.15)
+                {
+                    vel(index, 0) = 2;
+                    vel(index, 1) = 2;
+                }
             }
         }
     }

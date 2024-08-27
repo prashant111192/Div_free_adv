@@ -32,6 +32,7 @@ void pressure_poisson(const MatrixXX &pos,
                 const Eigen::SparseMatrix<data_type> &gradient_x,
                 const Eigen::SparseMatrix<data_type> &gradient_y,
                 const Eigen::SparseMatrix<data_type> &laplacian,
+                const MatrixXX &normals,
                 const constants &c);
 
 MatrixXX cal_div_part_vel(const MatrixXX &pos,

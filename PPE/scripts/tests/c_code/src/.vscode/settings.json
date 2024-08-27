@@ -1,0 +1,32 @@
+{
+    "files.associations": {
+        "core": "cpp",
+        "superlusupport": "cpp",
+        "threadpool": "cpp",
+        "*.inc": "cpp",
+        "autodiff": "cpp",
+        "*.tcc": "cpp",
+        "cassert": "cpp",
+        "cctype": "cpp",
+        "cerrno": "cpp",
+        "cfloat": "cpp",
+        "chrono": "cpp",
+        "climits": "cpp",
+        "clocale": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp",
+        "cstdarg": "cpp",
+        "cstddef": "cpp",
+        "cstdio": "cpp",
+        "cstdlib": "cpp",
+        "cstring": "cpp",
+        "ctime": "cpp",
+        "cwchar": "cpp",
+        "cwctype": "cpp",
+        "numeric": "cpp",
+        "ranges": "cpp",
+        "ratio": "cpp",
+        "tuple": "cpp",
+        "iostream": "cpp"
+    }
+}

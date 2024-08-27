@@ -36,13 +36,16 @@ def make_particles(length =1, boundary_fac = 40, dp=0.008):
                     velocity[count] = np.array([0.05,0.05], dtype=np.float32)
             count += 1
     
-    # h = 0.008660
     h_const = 0.02 
-    dp_const = 0.008
+    dp_const = 1
+    # h = 0.008660
+    # h_const = 0.02 
+    # dp_const = 0.008
     h_fac = h_const/dp_const
     h = h_fac * dp
+    h = dp*3
 
-    kh = h*2
+    kh = h
     mid = ((resolution*resolution/2 ))    
     mid = int(mid)
     print(f'Number of particles: {len(pos)}')
@@ -113,9 +116,9 @@ def plot_velocity_vec(positions, velocity, title):
 
 def plot_prop(positions, prop, title, climax=None, climin=None):
     plt.clf()
-    plt.scatter(positions[:,0], positions[:,1], c=prop, cmap='jet', s=10, alpha=1)
+    # plt.scatter(positions[:,0], positions[:,1], c=prop, cmap='jet', s=10, alpha=1)
     # plt.scatter(positions[:,0], positions[:,1], c=prop, cmap='twilight_shifted', s=10, alpha=1)
-    # plt.scatter(positions[:,0], positions[:,1], c=prop, cmap='viridis', s=0.2, alpha=0.5)
+    plt.scatter(positions[:,0], positions[:,1], c=prop, cmap='viridis', s=10, alpha=1)
     if climax is not None:
         plt.clim(vmax=climax, vmin=climin)
     plt.colorbar()
@@ -181,9 +184,9 @@ def gradient_poly6(r_ij, distance, kh):
     h = kh
     h1 = 1/h
     fac = (4*h1**8)/(np.pi)
-    temp = h**2 - distance**2
     grad = np.zeros(2, dtype=np.float32)
     if 0 < distance <= h:
+        temp = h**2 - distance**2
         # temp_2 = fac * 3*((temp)**2)*(-2*distance) / distance
         temp_2 = fac * (-6)*((temp)**2)
         grad = temp_2 * r_ij
@@ -267,42 +270,11 @@ def calc_non_div_vel(pos, q, density, mass, kh, NN_idx, ker_grad_array_x, ker_gr
     return grad_q
 
 def div_part_vel(pos, vel, density, mass, kh, NN_idx, Eta, p_type, div, pressure, n_part, weights_lap, weights_grad_x, weights_grad_y):
-    # h = kh
-    # h1 = 1/h
     A_mat = sp.lil_matrix((n_part, n_part), dtype=np.float32)
     b_mat = np.zeros(n_part, dtype=np.float32)
-    # start = time.time()
-    # b_mat = sp.lil_matrix(1, n_part)
-    # end = time.time()
-    # A_mat = np.zeros((n_part, n_part))
-    # b_mat = np.zeros(n_part)
-    # start = time.time()
-    # weights_grad = ker_grad_arr(pos, kh, NN_idx, vel)
-    # weights_lap = ker_lap_arr(pos, kh, NN_idx)
-    # end = time.time()
     args = [(i, pos, vel, density, mass, NN_idx, p_type, kh, n_part, weights_lap, weights_grad_x, weights_grad_y) for i in range(n_part)]
     pool = mp.Pool((mp.cpu_count()-6))
-    # pool = mp.Pool(6)
-    # start = time.time()
     results = pool.map(div_part_vel_part, args)
-    # end = time.time()
-    # print(f'Time taken to calculate A and b: {end-start} s')
-
-    # for i in range(n_part):
-    #     temp_ii= 0.0
-    #     for j in NN_idx[i]:
-    #         if i ==j:
-    #             continue
-    #         r_ij = pos[i] - pos[j]
-    #         distance = np.linalg.norm(r_ij)
-    #         if distance < kh and distance > 0.0:
-    #             # weight = gradient_poly6(r_ij, distance, kh)
-    #             A_mat[i,j] =  (mass/density[i])*weights_lap[i,j]
-
-    #             temp = np.dot((vel[j] - vel[i]), weights_grad[i,j])
-    #             b_mat[i] += temp 
-    #     b_mat[i] = b_mat[i] * mass / density[i]
-    #     A_mat[i,i] = -np.sum(A_mat[i,:])
     for i, A_mat_, b_mat_ in results:
         A_mat[i,:] = A_mat_
         b_mat[i] = b_mat_
@@ -338,7 +310,7 @@ def div_part_vel_part(arg):
             continue
         r_ij = pos[i] - pos[j]
         distance = np.linalg.norm(r_ij)
-        if distance < kh and distance > 0.0:
+        if distance <= kh and distance > 0.0:
             # weight = gradient_poly6(r_ij, distance, kh)
             A_mat[j] =  (mass/density[i])*weights_lap[i,j]
 
@@ -403,9 +375,9 @@ def main():
     start = time.time()
     plt.rcParams['figure.dpi'] = 600
     plt.rcParams['savefig.dpi'] = 600
-    length = 390
+    length = 90
     boundary_fac = 10
-    dp = 1
+    dp = 2
     # dp = 0.006
     pos, vel, density, mass, p_type, kh, h, mid = make_particles(length, boundary_fac, dp)
     Eta = 1e-20
@@ -454,6 +426,7 @@ def main():
     # temp = (density-density_new)*100/density
     # plot_prop(pos, temp, 'per_cent_density_diff')
     div = calc_divergence(pos, vel, mass, kh, NN_idx, Eta, density, p_type)
+    print(f'max abs div: {np.max(np.abs(div))}')
     print(f'max_div:{np.max(np.abs(div))}:div_sum:{np.sum(div)}')
 
     plot_prop(pos, div, 'divergence_ini')
@@ -480,14 +453,16 @@ def ker_grad_arr(pos, kh, NN_idx):
             tt = tt+weights_x[i,j]
             weights_x[i, j] = weights[ji, 0]
             weights_y[i, j] = weights[ji, 1]
+            # print(f'weights_x: {weights_x[i,j]}')
+            # print(f'weights_y: {weights_y[i,j]}')
     print(f'done')
     test = (abs(weights_x)).sum()
     # test = abs(weights_x).sum
     # test = (weights_x.multiply(weights_x)).sum()
     print(f'sum of grad_x: {tt}')
     print(f'test_x: {test}')
-    test = (weights_y.multiply(weights_y).divide(abs(weights_y))).sum()
-    print(f'test_y: {test}')
+    # test = (weights_y.multiply(weights_y).divide(abs(weights_y))).sum()
+    # print(f'test_y: {test}')
     # for i in range(len(pos)):
     #     for j in NN_idx[i]:
     #         r_ij = pos[i] - pos[j]

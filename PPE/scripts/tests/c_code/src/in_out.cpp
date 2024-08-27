@@ -1,5 +1,30 @@
 #include "in_out.hpp"
 
+template <typename T>
+void writeMatrixToFile(MatrixXX &pos, T x, std::string filename)
+// void writeMatrixToFile(MatrixXX matrix, const string& filename) {
+    {
+    int precision = 6;
+    std::ofstream file(filename, std::ios::out);
+    if (file.is_open()) {
+        // file << std::fixed << std::setprecision(precision);
+        for (int i = 0; i < x.rows(); ++i) {
+            file<< pos(i,0) << "," << pos(i,1) << ",";
+            for (int j = 0; j < x.cols(); ++j) {
+                file << x(i, j);
+                if (j < x.cols() - 1) {
+                    file << ",";
+                }
+            }
+            file << "\n";
+        }
+        file.close();
+        std::cout << "Matrix written to " << filename << std::endl;
+    } else {
+        std::cerr << "Unable to open file " << filename << std::endl;
+    }
+}
+
 void print_constants(constants c)
 {
     std::cout<< "=====================\n";

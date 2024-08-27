@@ -10,7 +10,14 @@ MatrixXX gradient_poly6(const data_type &distance, const constants &c, const Mat
         // CHECK properly pls
         auto temp = c.radius*c.radius - distance*distance;
         auto temp_2 = c.ker_fac*(-6)*temp*temp;
+        // testing, remove asap
+        // temp_2 = 2;
+        // MatrixXX grad2(1,2);
+        // grad2.fill(5.0);
         grad = r_ij * temp_2;
+
+        // std::cout<< "grad: " << grad << std::endl;
+
     }
     return grad;
 }
@@ -21,10 +28,10 @@ data_type lap_poly6(const data_type distance,
 {
     // data_type fac = c.ker_fac;
     data_type temp = c.radius*c.radius - distance * distance;
-    data_type lap = 0;
+    data_type lap;
     // if (distance>0 && distance<=c.radius)
     // {
-        lap = c.ker_fac *(3 * (2 *temp * (4 *distance *distance)+(temp*temp)*(-2)));
+    lap = c.ker_fac * (3 * (2 * temp * (4 * distance * distance) + (temp * temp * -2)));
     // }
     return lap;
 }
@@ -37,7 +44,6 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
                             SpMatrixXX &gradient_y,
                             SpMatrixXX &laplacian)
 {
-// #pragma omp parallel for num_threads(10)
     // testing
     std::cout << "Size of gradient_x: " << gradient_x.nonZeros() << std::endl;
     data_type sum_temp = 0;
@@ -46,6 +52,7 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
     int count = 0;
     int count_nn = 0;   
     // for (unsigned int i = 0; i < 1; i++)
+// #pragma omp parallel for num_threads(10)
     for (unsigned int i = 0; i < c.n_particles; i++)
     {
         for (unsigned int j = 0; j < nearIndex[i].size(); j++)
@@ -56,7 +63,10 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
             {
                 count = count + 1;
                 MatrixXX r_ij(1, 2);
+                // std::cout<< "pos row{i}: " << pos.row(i) << std::endl;
+                // std::cout<< "pos row{near}: " << pos.row(nearIndex[i][j]) << std::endl;
                 r_ij = pos.row(i) - pos.row(nearIndex[i][j]);
+                // std::cout<< "r_ij: " << r_ij << std::endl;
                 MatrixXX weight(1, 2);
                 weight.fill(0);
                 weight = gradient_poly6(nearDist[i][j], c, r_ij);
@@ -64,8 +74,8 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
                 sum_temp += (weight(0,0));
                 // sum_temp += abs(weight(0,0));
                 data_type temp = weight.row(0).dot(r_ij.row(0));
-                gradient_x.insert(i, nearIndex[i][j]) = weight(0, 0);
-                gradient_y.insert(i, nearIndex[i][j]) = weight(0, 1);
+                gradient_x.insert(i, nearIndex[i][j]) = weight(0);
+                gradient_y.insert(i, nearIndex[i][j]) = weight(1);
                 laplacian.insert(i, nearIndex[i][j]) = lap_poly6(nearDist[i][j], c);
                 sum_temp_2 += gradient_x.coeff(i, nearIndex[i][j]);
                 if (max< gradient_x.coeff(i, nearIndex[i][j]))
