@@ -6,9 +6,9 @@ EXEC_FILE = run.out
 # Compilation options (YES/NO)
 USE_FLAGS = YES
 USE_DEBUG = YES
+USE_PARALLEL = YES
 USE_FAST_MATH = YES
 USE_NATIVE_CPU_OPTIMIZATION = YES
-USE_PARALLEL = YES
 
 #==============================================================================
 # Directories and flags
@@ -25,10 +25,10 @@ else
 		ifeq ($(USE_NATIVE_CPU_OPTIMIZATION), YES)
 			CXXFLAGS += -march=native
 		endif
-		ifeq ($(USE_PARALLEL), YES)
-			CXXFLAGS += -fopenmp
-		endif
 	endif
+endif
+ifeq ($(USE_PARALLEL), YES)
+	CXXFLAGS += -fopenmp
 endif
 
 SRC = $(wildcard *.cpp)

@@ -1,4 +1,3 @@
-#include <iostream>
 #include "compute.hpp"
 
 void calc_divergence(const MatrixXX &pos,
@@ -60,8 +59,8 @@ void calc_divergence(const MatrixXX &pos,
         }
         total_abs_div += abs(divergence(i));
     }
-    std::cout << "Total absolute divergence: " << total_abs_div << std::endl;
-    std::cout << "Number of fluid particles: " << count_fluid << std::endl;
+    // std::cout << "Total absolute divergence: " << total_abs_div << std::endl;
+    // std::cout << "Number of fluid particles: " << count_fluid << std::endl;
 }
 
 void pressure_poisson(const MatrixXX &pos,
@@ -78,14 +77,21 @@ void pressure_poisson(const MatrixXX &pos,
                       const constants &c)
 {
     std::cout << "Starting the pressure poisson solver" << std::endl;
-    int max_iter = 100000;
+    int max_iter = 10;
     int current_iter = 0;
     SpMatrixXX A(c.n_particles, c.n_particles);
     MatrixXX b(c.n_particles, 1);
     MatrixXX p(c.n_particles, 1);
+    MatrixXX pos_write(c.n_particles, 2);
+    MatrixXX vel_write(c.n_particles, 2);
+    MatrixXX div_write(c.n_particles, 1);
+
+    // std::thread th_write1, th_write2;
+
 
     data_type max_div = 1000;
-    while (max_div > 1e-6 && current_iter < max_iter)
+    std::cout << "#Run;#Iter;Error;MaxDiv" << std::endl;
+    while (max_div > 1e-6 && current_iter< max_iter)
     {
         current_iter++;
 
@@ -95,7 +101,7 @@ void pressure_poisson(const MatrixXX &pos,
         A.reserve(Eigen::VectorXi::Constant(c.n_particles, 600));
         auto start = std::chrono::high_resolution_clock::now();
 
-        std::cout << "Starting the creation of A" << std::endl;
+        // std::cout << "Starting the creation of A" << std::endl;
 #pragma omp parallel for num_threads(10)
         for (unsigned int i = 0; i < c.n_particles; i++)
         {
@@ -146,7 +152,9 @@ void pressure_poisson(const MatrixXX &pos,
             }
         }
 #pragma omp barrier
-        std::cout << "Done with patrtial creation of A" << std::endl;
+
+        // std::cout << "Done with patrtial creation of A" << std::endl;
+
 #pragma omp parallel for num_threads(10)
         for (unsigned int i = 0; i < c.n_particles; i++)
         {
@@ -163,12 +171,12 @@ void pressure_poisson(const MatrixXX &pos,
         }
 #pragma omp barrier
         // std::cout<< A.nonZeros()<< std::endl;
-        std::cout << "created the diagonal elemetes\n";
+        // std::cout << "created the diagonal elemetes\n";
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-        std::cerr << ">>Time taken to prepare part of A: " << duration.count() / 1e6 << " seconds\n";
+        // std::cerr << ">>Time taken to prepare part of A: " << duration.count() / 1e6 << " seconds\n";
 
         // Sanity check
         // just to count the number of negative diagonal elements
@@ -185,8 +193,8 @@ void pressure_poisson(const MatrixXX &pos,
                 count_zero_diagonal++;
             }
         }
-        std::cout << "Number of negative diagonal elements: " << count_negative_diagonal << std::endl;
-        std::cout << "Number of zero diagonal elements: " << count_zero_diagonal << std::endl;
+        // std::cout << "Number of negative diagonal elements: " << count_negative_diagonal << std::endl;
+        // std::cout << "Number of zero diagonal elements: " << count_zero_diagonal << std::endl;
 
         using namespace Eigen;
 
@@ -206,33 +214,46 @@ void pressure_poisson(const MatrixXX &pos,
         calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
 
         max_div = divergence.maxCoeff();
-        if (current_iter % 1 == 0)
-        {
-            std::cerr << "Current iteration: " << current_iter << " with the max divergence being " << max_div << std::endl;
+        // if (current_iter % 1 == 0)
+        std::cout<<current_iter<<";"<<lscg.iterations()<<";"<<lscg.error()<<";"<<max_div<<std::endl;
+        // {
+            // std::cerr << "Current iteration: " << current_iter << " with the max divergence being " << max_div << std::endl;
             // std::cerr << "Time taken to solve the system(s);" << duration.count() / 1e6 << ";";
-            std::cout << "#iterations for lscg;" << lscg.iterations() << ";Error;" << lscg.error() << std::endl;
-        }
-        if (current_iter % 10 == 0)
+            // std::cout << "#iterations for lscg;" << lscg.iterations() << ";Error;" << lscg.error() << std::endl;
+        // }
+        int write_freq = 2; 
+        if (current_iter % write_freq == 0)
         {
-            std::string filename = "divergence_" + std::to_string(current_iter) + ".csv";
-            writeMatrixToFile(pos, divergence, filename);
-            filename = "velocity_" + std::to_string(current_iter) + ".csv";
-            writeMatrixToFile(pos, vel, filename);
+            // pos_write = pos;
+            // div_write = divergence;
+            // vel_write = vel;
+            std::string filename = std::to_string(c.dp_i)+"_divergence_" + std::to_string(current_iter) + ".csv";
+            // th_write1 = std::thread(&writeMatrixToFile<MatrixXX&>, pos_write, div_write, filename);
+            writeMatrixToFile<MatrixXX&>(pos, divergence, filename);
+            filename = std::to_string(c.dp_i)+"_velocity_" + std::to_string(current_iter) + ".csv";
+            // th_write2 = std::thread(&writeMatrixToFile<MatrixXX&>, pos_write, vel_write, filename);
+            writeMatrixToFile<MatrixXX>(pos, vel, filename);
         }
+        // if (current_iter % write_freq == write_freq-1 || current_iter == max_iter-1)
+         
+        // {
+        //     th_write1.join();
+        //     th_write2.join();
+        // }
 
-        if (max_div < 1e-5)
-        {
-            break;
-        }
+        // if (max_div < 1e-5)
+        // {
+        //     break;
+        // }
     }
-    if (current_iter == max_iter - 1)
-    {
-        std::cerr << "Pressure Poisson Solver did not converge with the max divergence being " << max_div << std::endl;
-    }
-    else
-    {
-        std::cerr << "Pressure Poisson Solver converged at " << current_iter << " with the max divergence being " << max_div << std::endl;
-    }
+    // if (current_iter == max_iter - 1)
+    // {
+    //     std::cerr << "Pressure Poisson Solver did not converge with the max divergence being " << max_div << std::endl;
+    // }
+    // else
+    // {
+    //     std::cerr << "Pressure Poisson Solver converged at " << current_iter << " with the max divergence being " << max_div << std::endl;
+    // }
 }
 
 MatrixXX cal_div_part_vel(const MatrixXX &pos,

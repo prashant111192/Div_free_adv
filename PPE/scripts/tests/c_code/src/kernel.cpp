@@ -44,86 +44,32 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
                             SpMatrixXX &gradient_y,
                             SpMatrixXX &laplacian)
 {
-    // testing
-    std::cout << "Size of gradient_x: " << gradient_x.nonZeros() << std::endl;
-    data_type sum_temp = 0;
-    data_type sum_temp_2 = 0;
-    data_type max = 1e-20;
-    int count = 0;
-    int count_nn = 0;   
-    // for (unsigned int i = 0; i < 1; i++)
-// #pragma omp parallel for num_threads(10)
+    LOG(INFO) << "Preparing the gradient and laplacian matrix";
+    auto start = std::chrono::high_resolution_clock::now();
+#pragma omp parallel for num_threads(10)
     for (unsigned int i = 0; i < c.n_particles; i++)
     {
         for (unsigned int j = 0; j < nearIndex[i].size(); j++)
         {
-            count_nn += 1;
-            // DO i need this check now???
-            if (nearDist[i][j] > 0 && nearDist[i][j] <= c.radius)
-            {
-                count = count + 1;
+            // if (nearDist[i][j] > 0 && nearDist[i][j] <= c.radius)
+            // {
                 MatrixXX r_ij(1, 2);
-                // std::cout<< "pos row{i}: " << pos.row(i) << std::endl;
-                // std::cout<< "pos row{near}: " << pos.row(nearIndex[i][j]) << std::endl;
                 r_ij = pos.row(i) - pos.row(nearIndex[i][j]);
-                // std::cout<< "r_ij: " << r_ij << std::endl;
                 MatrixXX weight(1, 2);
                 weight.fill(0);
                 weight = gradient_poly6(nearDist[i][j], c, r_ij);
-    // testing
-                sum_temp += (weight(0,0));
-                // sum_temp += abs(weight(0,0));
-                data_type temp = weight.row(0).dot(r_ij.row(0));
                 gradient_x.insert(i, nearIndex[i][j]) = weight(0);
                 gradient_y.insert(i, nearIndex[i][j]) = weight(1);
                 laplacian.insert(i, nearIndex[i][j]) = lap_poly6(nearDist[i][j], c);
-                sum_temp_2 += gradient_x.coeff(i, nearIndex[i][j]);
-                if (max< gradient_x.coeff(i, nearIndex[i][j]))
-                {
-                    max = gradient_x.coeff(i, nearIndex[i][j]);
-                }
-                // sum_temp += lap_poly6(nearDist[i][j], c);
-            }
+            // }
         }
     }
-
-    // testing
-    std::cout << "Number of nearest neighbours: " << count_nn << std::endl;
-    std::cout<< "Number of non zero elements using count variable in gradient_x: " << count << std::endl;
-    std::cout << "Non Zero in gradient_x: " << gradient_x.nonZeros() << std::endl;
-    std::cout<< "Sizeof c"<< sizeof(c) << std::endl;
-    std::cerr<< "Size of gradient_x before compression:"<< sizeof(gradient_x) << std::endl;
-    std::cout<< "the sum of the grad_x: " << sum_temp << std::endl;
-    std::cout<< "the sum of the grad_x using coeff: " << sum_temp_2 << std::endl;
-    std::cout<< "the sum using .sum(): " << gradient_x.sum() << std::endl;
-
 
     gradient_x.makeCompressed();
     gradient_y.makeCompressed();
     laplacian.makeCompressed();
-    std::cerr<< "Size of gradient_x after compression:"<< sizeof(gradient_x) << std::endl;
-    std::cout<< "sum after compressed: " << gradient_x.sum() << std::endl;
-    data_type another_sum = 0;
-    for (unsigned int i = 0; i < c.n_particles; i++)
-    {
-        for (unsigned int j = 0; j < nearIndex[i].size(); j++)
-        {
-            if (nearDist[i][j] > 0 && nearDist[i][j] <= c.radius)
-            {
-                another_sum += abs(gradient_x.coeff(i, nearIndex[i][j]));
-            }
-        }
-    }
-    std::cerr<< "Size of gradient_x before compression:"<< sizeof(gradient_x) << std::endl;
-    std::cout<< "sum after compressed and using coeff: " << another_sum << std::endl;
-
-    std::cout<< "max using for loop: " << max << std::endl;
-    std::cout<< "max coeff: " <<gradient_x.coeffs().maxCoeff() << std::endl;
-    std::cout<< "max coeff: " <<gradient_x.coeffs().minCoeff() << std::endl;
-    std::cout << "Size of gradient_x: " << gradient_x.nonZeros() << std::endl;
-    std::cout << "memory used by gradient_x: " << gradient_x.nonZeros() * sizeof(data_type) / (1024 * 1024) << " Mbytes" << std::endl;
-    std::cout << "Size of gradient_x: " << laplacian.nonZeros() << std::endl;
-    std::cout << "memory used by gradient_x: " << laplacian.nonZeros() * sizeof(data_type) / (1024 * 1024) << " Mbytes" << std::endl;
-    std::cerr<< "Size of gradient_x before compression:"<< sizeof(gradient_x) << std::endl;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    LOG(INFO) << "Time taken to prepare the gradient and laplacian matrix: " << duration.count() / 1e6 << " seconds";
 }
     

@@ -1,7 +1,8 @@
 #include "type_def.hpp"
 
-constants define_constants(data_type size, data_type dp, data_type boundary_fac)
+constants define_constants(data_type size, data_type dp, data_type boundary_fac, int dpi)
 {
+    LOG(INFO)<< "Defining constants";
     constants c;
     c.h = 0.02;            // why was this used??
     c.dp = dp;
@@ -17,16 +18,40 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac)
     c.n_particles = c.resolution * c.resolution;
     c.mid_idx = (int)((c.n_particles) / 2);
     c.Eta = 1e-12;
-    c.radius = 4 * dp; // kh, radius of influence
-    // c.radius = 12 * dp; // kh, radius of influence
+    // c.radius = 4 * dp; // kh, radius of influence
+    c.dp_i = dpi;       // factor to scale the radius of influence
+    c.radius = dpi * dp; // kh, radius of influence
     c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
-    
-
     return c;
 }
 
+std::ostream &operator <<(std::ostream &outs, const constants &c)
+{
+    outs << "Printing constants" << std::endl
+         << "h: " << c.h << std::endl
+         << "dp: " << c.dp << std::endl
+         << "h_fac: " << c.h_fac << std::endl
+         << "mass: " << c.mass << std::endl
+         << "boundary_size: " << c.boundary_size << std::endl
+         << "x_y_bn: " << c.x_y_bn << std::endl
+         << "x_y_bp: " << c.x_y_bp << std::endl
+         << "x_y_n: " << c.x_y_n << std::endl
+         << "x_y_p: " << c.x_y_p << std::endl
+         << "resolution: " << c.resolution << std::endl
+         << "n_particles: " << c.n_particles << std::endl
+         << "mid_idx: " << c.mid_idx << std::endl
+         << "Eta: " << c.Eta << std::endl
+         << "radius: " << c.radius << std::endl
+         << "ker_fac: " << c.ker_fac << std::endl
+         << "=====================\n";
+    return outs;
+}
+
+
 void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type, MatrixXX &normals)
 {
+    
+    LOG(INFO)<< "Making particles";
     p_type.fill(1); // all are fluid
     density.fill(1000); // density of water
 
@@ -76,6 +101,29 @@ void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
             }
         }
     }
-    std::cout<< "total number of fluids: "<< p_type.sum() << std::endl;
-    std::cout<< "total particles: (index:number) "<< index <<" or "<< c.n_particles << std::endl;
+    LOG(INFO) << "Total number of fluids: "<< p_type.sum();
+    LOG(INFO)<< "total particles: (index:number) "<< index <<" or "<< c.n_particles << std::endl;
+    // std::cout<< "total number of fluids: "<< p_type.sum() << std::endl;
+    // std::cout<< "total particles: (index:number) "<< index <<" or "<< c.n_particles << std::endl;
 }
+
+// void logging(std::string message, int level, std::string filename ="log.txt", bool toFile = true)
+// {
+//     // level 0: error
+//     // level 1: warning
+//     // level 2: info
+//     // level 3: debug
+    
+//     std::ofstream file;
+//     file.open(filename, std::ios::out);
+//     if (file.is_open())
+//     {
+//         file << message << std::endl;
+//         file.close();
+//     }
+//     else
+//     {
+//         std::cerr << "Unable to open file " << filename << std::endl;
+//     }
+
+// }

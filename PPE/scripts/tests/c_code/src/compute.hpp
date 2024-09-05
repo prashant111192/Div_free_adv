@@ -4,6 +4,9 @@
 #include <numeric>
 #include <vector>
 #include <algorithm>
+#include <iostream>
+#include <thread>
+
 #include "type_def.hpp"
 #include "in_out.hpp"
 #include "kernel.hpp"

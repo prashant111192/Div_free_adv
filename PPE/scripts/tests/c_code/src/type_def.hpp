@@ -4,7 +4,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <iostream>
+#include <fstream>
 #include <vector>
+#include "log.hpp"
 #define data_type double // data type for the particles // Need double for Knn, change accordingly. 
 
 
@@ -13,6 +15,7 @@ struct constants
 {
     data_type h;
     data_type dp;
+    data_type dp_i;
     data_type h_fac;
     data_type mass;
     data_type boundary_size;
@@ -28,12 +31,15 @@ struct constants
     data_type ker_fac;
 };
 
+std::ostream &operator <<(std::ostream &outs, const constants &c);
 
 typedef Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> MatrixXX;
 typedef Eigen::Vector<data_type, Eigen::Dynamic> VectorX;
 typedef Eigen::SparseMatrix<data_type, Eigen::RowMajor> SpMatrixXX;
 
-constants define_constants(data_type size, data_type dp, data_type boundary_fac);
+constants define_constants(data_type size, data_type dp, data_type boundary_fac, int dpi);
 void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type, MatrixXX &normals);
+
+// logging features
 
 #endif

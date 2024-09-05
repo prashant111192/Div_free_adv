@@ -8,52 +8,78 @@
 #include "in_out.hpp"
 #include "compute.hpp"
 #include "kernel.hpp"
+#include "easylogging++.cc"
+#include "log.hpp"
 
 
-int main()
+INITIALIZE_EASYLOGGINGPP
+
+void start(int dp_i);
+
+
+int main(int argc, char* argv[])
+{
+    // Stting up the logger
+    START_EASYLOGGINGPP(argc, argv);
+    // el::Configurations conf("./../../src/easyconfig.conf");
+    // el::Loggers::reconfigureAllLoggers(conf);
+    // el::Logger* DATALogger = el::Loggers::getLogger("DATA");
+    // el::Configurations conf2("./../../src/config_data.conf");
+    // el::Loggers::reconfigureLogger(DATALogger, conf2);
+
+
+    // conf.set(el::Level::Global, el::ConfigurationType::Format, "%datetime %level %msg");
+    // conf.set(el::Level::Global, el::ConfigurationType::Filename, "logs/my_log.log");
+    // el::Loggers::reconfigureLogger("default", conf);
+
+    // Step 3: Use custom logging levels
+    
+    // Use CLOG macro for logging with custom levels
+
+    LOG(INFO) << "Starting the simulation with different dp_i (factor to scale the radius of influence)"; 
+    for (int i = 2; i <= 12; i=i+2)
+    {
+        LOG(INFO)<< "Starting simualtion with dp_i: " << i << std::endl;
+        start(i);
+    }
+    return 0;
+}
+
+void start(int dp_i)
 {
     auto start_complete = std::chrono::high_resolution_clock::now();
     auto start = std::chrono::high_resolution_clock::now();
-    std::cout << "Let's do this!!" << std::endl;
     data_type size = 100;
     data_type dp = 1;
-    auto boundary_fac = 20;
-    constants c = define_constants(size, dp, boundary_fac);
+    auto boundary_fac = 20*dp;
 
-    print_constants(c);
+    constants c = define_constants(size, dp, boundary_fac, dp_i);
+    LOG(INFO) << c;
 
-    // std::vector<std::vector<data_type>> pos(c.n_particles, std::vector<data_type>(2));
-    // std::vector<std::vector<data_type>> vel(c.n_particles, std::vector<data_type>(2));
-    // std::vector<data_type> density(c.n_particles);
-    // std::vector<unsigned> p_type(c.n_particles);
+    LOG(INFO) << "Intialising particle arrays";
     MatrixXX pos(c.n_particles, 2);
+    pos.fill(0);
     MatrixXX vel(c.n_particles, 2);
+    vel.fill(0);
     MatrixXX density(c.n_particles, 1);
-    // std::vector<data_type> p_type(c.n_particles, 1);
+    density.fill(1000);
     Eigen::MatrixXi p_type(c.n_particles, 1);
     MatrixXX normals(c.n_particles, 2);
     normals.fill(0);
-
     make_particles(c, pos, vel, density, p_type, normals);
-    writeMatrixToFile(pos, vel, "vel1.csv");
-    writeMatrixToFile(pos, normals, "normals.csv");
-    std::cout<< "total number of fluids: "<< p_type.sum() << std::endl;
 
-    // std::vector<std::vector<double>> nearDist_(c.n_particles);    // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
+    writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel1.csv");
+    writeMatrixToFile<MatrixXX&>(pos, normals, std::to_string(dp_i)+"normals.csv");
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    LOG(INFO) << "Time taken to initialise the particles: " << duration.count()/1e6 << " seconds";
+
+    LOG(INFO) << "Setting up the NN";
+    start = std::chrono::high_resolution_clock::now();
     std::vector<std::vector<data_type>> nearDist(c.n_particles);
     std::vector<std::vector<unsigned>> nearIndex(c.n_particles); // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
     initialise_NN(c, pos, nearIndex, nearDist);
-    // basically just copying the nearDist_ to nearDist :::::: IDK why this is done
-    // for (unsigned int i = 0; i < nearDist_.size(); i++)
-    // {
-    //     nearDist[i].resize(nearDist_[i].size());
-    //     for (unsigned int j = 0; j < nearDist_[i].size(); j++)
-    //     {
-    //         nearDist[i][j] = nearDist_[i][j];
-    //     }
-    // }
-    // std::vector<data_type> nearDist(nearDist_.begin(), nearDist_.end());
-    
+
     // Finding the maximum number of NN
     int count = 0;
     int total_NN = 0;
@@ -66,44 +92,33 @@ int main()
             count = nearIndex[j].size();
         }
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    std::cout<< "Sizeof c"<< sizeof(c) << std::endl;
-    std::cout<< ">>Time taken for NN: " << duration.count()/1e6 << " seconds\n";
-    std::cout << "Maximum number of NN: " << count << std::endl;
-    std::cout << "Total number of NN: " << total_NN << std::endl;
-    std::cout << "Average number of NN: " << (float)total_NN/nearIndex.size() << std::endl;
+    LOG(INFO) << "Maximum number of NN: " << count;
+    LOG(INFO) << "Avergae number of NN: " << (float)total_NN/nearIndex.size();
+    end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    LOG(INFO)<< "Time taken to initialise the NN: " << duration.count()/1e6 << " seconds";
 
-    // Creating the GRADIENT and LAPLACIAN Matrix
-    std::cout<< "Size of count which is an int: "<< sizeof(count) << std::endl;
-    std::cout<< "size of char: " << sizeof(char) << " Byte"<< std::endl;
-    start = std::chrono::high_resolution_clock::now();
     SpMatrixXX gradient_x(c.n_particles, c.n_particles);
-    // Eigen::SparseMatrix<data_type> gradient_x(c.n_particles, c.n_particles);
-    std::cout << "No. of non zero in grad_x (in empy state): " << gradient_x.nonZeros() << std::endl;
-    std::cout<< "Size of gradient_x(in empy state) Byte:"<< sizeof(gradient_x) << std::endl;
     gradient_x.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
-    std::cout << "No. of non zero in grad_x after reserve: " << gradient_x.nonZeros() << std::endl;
-    std::cout<< "Size of gradient_x after reserve (Byte):"<< sizeof(gradient_x) << std::endl;
-    // Eigen::SparseMatrix<data_type> gradient_y(c.n_particles, c.n_particles);
+    gradient_x.setZero();
     SpMatrixXX gradient_y(c.n_particles, c.n_particles);
     gradient_y.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
+    gradient_y.setZero();
     SpMatrixXX laplacian(c.n_particles, c.n_particles);
-    // Eigen::SparseMatrix<data_type> laplacian(c.n_particles, c.n_particles);
     laplacian.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
+    laplacian.setZero();
     data_type sum_temp = laplacian.sum();
-    std::cout<< "sum_temp(sum of laplacian): " << sum_temp << std::endl;
 
 
     prepare_grad_lap_matrix(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
 
-    std::cout<< "No. of non zero in grad_x after filling:"<< sizeof(gradient_x) << std::endl;
-    std::cout << "Size of gradient_x after filling (Byte): " << gradient_x.nonZeros() << std::endl;
+    // std::cout<< "No. of non zero in grad_x after filling:"<< sizeof(gradient_x) << std::endl;
+    // std::cout << "Size of gradient_x after filling (Byte): " << gradient_x.nonZeros() << std::endl;
     // data_type just_check = gradient_x.cwiseProduct(gradient_x).sum();
     // int numberOfNonZeroElements = gradient_x.nonZeros();
     // std::cout << "Number of non-zero elements in _X: " << numberOfNonZeroElements << std::endl;
     data_type just_check = gradient_x.sum();
-    std::cout<< "Result of sum(gradient_x): " << just_check << std::endl;
+    // std::cout<< "Result of sum(gradient_x): " << just_check << std::endl;
     // just_check = gradient_y.cwiseProduct(gradient_y).sum();
     // just_check = gradient_y.sum();
     // just_check = (gradient_y*gradient_y).sum();
@@ -119,8 +134,8 @@ int main()
 
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    std::cout << ">>Time taken to compute the gradient and laplacian matrix : "
-              << duration.count() / 1e6 << " seconds" << std::endl;
+    // std::cout << ">>Time taken to compute the gradient and laplacian matrix : "
+    //           << duration.count() / 1e6 << " seconds" << std::endl;
 
     // // DIVERGENCE
     start = std::chrono::high_resolution_clock::now();
@@ -128,24 +143,25 @@ int main()
     divergence.fill(0);
     calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
     // std::cout<< "max divergence: " << divergence.maxCoeff() << "\n";
-    writeMatrixToFile(pos, divergence, "divergence.csv");
+    std::string filename = std::to_string(dp_i)+"_divergence.csv";
+    writeMatrixToFile<MatrixXX&>(pos, divergence, filename);
     // writeMatrixToFile(pos, "pos.csv");
     // writeMatrixToFile(vel, "vel.csv");
     // writeMatrixToFile(p_type, "p_type.csv");
     // exit(0);
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    std::cout<< ">>Time taken for divergence: " << duration.count()/1e6 << " seconds\n";
+    // std::cout<< ">>Time taken for divergence: " << duration.count()/1e6 << " seconds\n";
 
     start = std::chrono::high_resolution_clock::now();
     pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, normals, c);
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    std::cout<< ">>Time taken for pressure_poisson: " << duration.count()/1e6 << " seconds\n";
+    // std::cout<< ">>Time taken for pressure_poisson: " << duration.count()/1e6 << " seconds\n";
 
-    writeMatrixToFile(pos, p_type, "p_type.csv");
-    writeMatrixToFile(pos, divergence, "divergence_2.csv");
-    writeMatrixToFile(pos, vel, "vel2.csv");
+    writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"_p_type.csv");
+    writeMatrixToFile<MatrixXX&>(pos, divergence, std::to_string(dp_i)+"divergence_2.csv");
+    writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel2.csv");
     // std::cout << "resolution: " << c.resolution << std::endl;
     // std::cout << "n_particles: " << c.n_particles << std::endl;
     // size_t total_NN;
@@ -160,10 +176,8 @@ int main()
     // std::cout << "Total memory used for NN_distance: " << total_NN/(1024*1024) << " Mbytes" << std::endl;
     // std::cout<< "size of double: " << sizeof(data_type) << "and size of unsigned int: " << sizeof(unsigned int) << std::endl;
     divergence = divergence.array().abs();
-    std::cout << "Max Divergence: " << divergence.maxCoeff() << std::endl;
+    // std::cout << "Max Divergence: " << divergence.maxCoeff() << std::endl;
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_complete);
-    std::cout << ">>Time taken for the complete code: " << duration.count() / 1e6 << " seconds" << std::endl;
-
-    return 0;
+    // std::cout << ">>Time taken for the complete code: " << duration.count() / 1e6 << " seconds" << std::endl;
 }
