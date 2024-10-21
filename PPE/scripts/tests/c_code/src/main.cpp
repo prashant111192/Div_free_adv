@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
     // Use CLOG macro for logging with custom levels
 
     LOG(INFO) << "Starting the simulation with different dp_i (factor to scale the radius of influence)"; 
-    for (int i = 2; i <= 12; i=i+2)
+    for (int i = 4; i <= 6; i=i+2)
     {
         LOG(INFO)<< "Starting simualtion with dp_i: " << i;
         start(i);
@@ -67,6 +67,8 @@ void start(int dp_i)
     MatrixXX normals(c.n_particles, 2);
     normals.fill(0);
     make_particles(c, pos, vel, density, p_type, normals);
+    MatrixXX normals_computed(c.n_particles, 2);
+    normals_computed.fill(0);
 
     writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini.csv");
     writeMatrixToFile<MatrixXX&>(pos, normals, std::to_string(dp_i)+"normals.csv");
@@ -110,6 +112,8 @@ void start(int dp_i)
     data_type sum_temp = laplacian.sum();
 
     prepare_grad_lap_matrix(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
+    make_normals(c, pos, normals_computed, gradient_x, gradient_y, p_type, nearIndex, density);
+    writeMatrixToFile<MatrixXX&>(pos, normals_computed, std::to_string(dp_i)+"normals_computed.csv");
 
     // DIVERGENCE
     MatrixXX divergence(c.n_particles, 1);

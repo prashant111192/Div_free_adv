@@ -40,6 +40,14 @@ typedef Eigen::SparseMatrix<data_type, Eigen::RowMajor> SpMatrixXX;
 constants define_constants(data_type size, data_type dp, data_type boundary_fac, int dpi);
 void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type, MatrixXX &normals);
 
+void make_normals(const constants &c,
+                    const MatrixXX &pos,
+                    MatrixXX &normals_computed,
+                    SpMatrixXX &gradient_x,
+                    SpMatrixXX &gradient_y,
+                    const Eigen::MatrixXi &p_type,
+                    std::vector<std::vector<unsigned int>> &nearIndex,
+                    const MatrixXX &density);
 // logging features
 
 #endif
