@@ -92,12 +92,14 @@ void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
             }
             else
             {
-                if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < 30 * c.dp && pos(index, 1) < c.dp * 30)
-                // if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < c.x_y_p * 0.15 && pos(index, 1) < c.x_y_p * 0.15)
-                {
-                    vel(index, 0) = 2;
-                    vel(index, 1) = 2;
-                }
+                vel(index, 0) = sin(pos(index, 0)) * sin(pos(index, 0));
+                vel(index, 1) = cos(pos(index, 1)) * cos(pos(index, 1));
+                // if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < 30 * c.dp && pos(index, 1) < c.dp * 30)
+                // // if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < c.x_y_p * 0.15 && pos(index, 1) < c.x_y_p * 0.15)
+                // {
+                //     vel(index, 0) = 2;
+                //     vel(index, 1) = 2;
+                // }
             }
         }
     }

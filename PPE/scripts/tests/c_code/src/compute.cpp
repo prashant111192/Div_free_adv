@@ -300,3 +300,21 @@ MatrixXX cal_div_part_vel(const MatrixXX &pos,
     LOG(INFO) << "Done with calculation of the divergent part of the velocity and it took "<< duration.count()/1e6<<" seconds.";
     return q;
 }
+
+void saving_grads(const MatrixXX &pos,
+                    MatrixXX &vel,
+                    const MatrixXX &density,
+                    const Eigen::MatrixXi &p_type,
+                    const std::vector<std::vector<unsigned int>> &nearIndex,
+                    const std::vector<std::vector<data_type>> &nearDist,
+                    MatrixXX &divergence,
+                    const Eigen::SparseMatrix<data_type> &gradient_x,
+                    const Eigen::SparseMatrix<data_type> &gradient_y,
+                    const Eigen::SparseMatrix<data_type> &laplacian,
+                    const MatrixXX &normals,
+                    const constants &c,
+                    const unsigned int count)
+{
+    
+
+}
