@@ -66,7 +66,7 @@ void pressure_poisson(const MatrixXX &pos,
                       const unsigned int count)
 {
     LOG(INFO) << "Starting the pressure poisson solver";
-    int max_iter = 100;
+    int max_iter = 10000;
     int current_iter = 0;
     SpMatrixXX A(c.n_particles, c.n_particles);
     MatrixXX b(c.n_particles, 1);
@@ -196,7 +196,7 @@ void pressure_poisson(const MatrixXX &pos,
         max_div = divergence.maxCoeff();
         // if (current_iter % 1 == 0)
         std::cout << current_iter << ";" << lscg.iterations() << ";" << lscg.error() << ";" << max_div << std::endl;
-        int write_freq = 2;
+        int write_freq = 10;
         if (current_iter % write_freq == 0)
         {
             // pos_write = pos;

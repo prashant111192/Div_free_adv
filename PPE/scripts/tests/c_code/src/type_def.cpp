@@ -125,16 +125,33 @@ void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
                     normals(index, 1) = -1;
                 }
             }
+            else if (pos(index, 0) < c.radius/2 && pos(index, 0) >  -c.radius/2 && pos(index, 1) < -c.radius )
+            // else if (pos(index, 0) < c.radius/2 && pos(index, 0) >  -c.radius/2 && pos(index, 1) < c.radius/2 && pos(index, 1) >  -c.radius/2)
+            {
+                p_type(index) = 0;
+                normals(index, 0) = 0;
+                normals(index, 1) = 0;
+                /* code */
+            }
+            
+            else if (pos(index, 0) < (c.radius *5) + c.radius/2 && pos(index, 0) >  (c.radius * 5) -c.radius/2 &&  pos(index, 1) >  (c.radius *5) -c.radius/2)
+            // else if (pos(index, 0) < (c.radius *5) + c.radius/2 && pos(index, 0) >  (c.radius * 5) -c.radius/2 && pos(index, 1) < c.radius +c.radius/2 && pos(index, 1) >  c.radius -c.radius/2)
+            {
+                p_type(index) = 0;
+                normals(index, 0) = 0;
+                normals(index, 1) = 0;
+                /* code */
+            }
             else
             {
-                vel(index, 0) = sin(pos(index, 0)) * sin(pos(index, 0));
-                vel(index, 1) = cos(pos(index, 1)) * cos(pos(index, 1));
-                // if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < 30 * c.dp && pos(index, 1) < c.dp * 30)
+                // vel(index, 0) = sin(pos(index, 0)) * sin(pos(index, 0));
+                // vel(index, 1) = cos(pos(index, 1)) * cos(pos(index, 1));
+                if (pos(index, 0) > -5*c.radius && pos(index, 1) > -5*c.radius && pos(index, 0) < 30 * c.dp && pos(index, 1) < c.dp * 30)
                 // // if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < c.x_y_p * 0.15 && pos(index, 1) < c.x_y_p * 0.15)
-                // {
-                //     vel(index, 0) = 2;
-                //     vel(index, 1) = 2;
-                // }
+                {
+                    vel(index, 0) = 2;
+                    vel(index, 1) = 2;
+                }
             }
         }
     }

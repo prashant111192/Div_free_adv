@@ -66,6 +66,7 @@ void start(int dp_i)
     Eigen::MatrixXi p_type(c.n_particles, 1);
     MatrixXX normals(c.n_particles, 2);
     normals.fill(0);
+
     make_particles(c, pos, vel, density, p_type, normals);
     MatrixXX normals_computed(c.n_particles, 2);
     normals_computed.fill(0);
@@ -114,6 +115,8 @@ void start(int dp_i)
     prepare_grad_lap_matrix(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
     make_normals(c, pos, normals_computed, gradient_x, gradient_y, p_type, nearIndex, density);
     writeMatrixToFile<MatrixXX&>(pos, normals_computed, std::to_string(dp_i)+"normals_computed.csv");
+    writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"particle_type.csv");
+    // exit(0);
 
     // DIVERGENCE
     MatrixXX divergence(c.n_particles, 1);
@@ -122,7 +125,7 @@ void start(int dp_i)
     std::string filename = std::to_string(dp_i)+"_divergence.csv";
     writeMatrixToFile<MatrixXX&>(pos, divergence, filename);
 
-    pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, normals, c, count);
+    pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, normals_computed, c, count);
 
     writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"_p_type.csv");
     writeMatrixToFile<MatrixXX&>(pos, divergence, std::to_string(dp_i)+"divergence_2.csv");

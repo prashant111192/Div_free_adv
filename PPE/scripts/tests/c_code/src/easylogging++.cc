@@ -26,6 +26,7 @@ namespace consts {
 // Level log values - These are values that are replaced in place of %level format specifier
 // Extra spaces after format specifiers are only for readability purposes in log files
 static const base::type::char_t* kInfoLevelLogValue     =   ELPP_LITERAL("INFO");
+static const base::type::char_t* kInfoLevelLogValue     =   ELPP_LITERAL("INFO_DATA");
 static const base::type::char_t* kDebugLevelLogValue    =   ELPP_LITERAL("DEBUG");
 static const base::type::char_t* kWarningLevelLogValue  =   ELPP_LITERAL("WARNING");
 static const base::type::char_t* kErrorLevelLogValue    =   ELPP_LITERAL("ERROR");

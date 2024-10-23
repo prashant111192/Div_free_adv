@@ -30,5 +30,4 @@ void writeMatrixToFile(const MatrixXX &pos, T &x, std::string filename)
         LOG(ERROR) << "Unable to open file " << filename;
     }
 }
-
 #endif
