@@ -63,7 +63,6 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
             gradient_y.insert(i, nearIndex[i][j]) = weight(1);
 #pragma omp critical(foo3)
             laplacian.insert(i, nearIndex[i][j]) = lap_poly6(nearDist[i][j], c);
-            // laplacian.coeffRef(i, i) = 1;
         }
     }
 
@@ -72,5 +71,5 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
     laplacian.makeCompressed();
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO) << "Time taken to prepare the gradient and laplacian matrix: " << duration.count() / 1e6 << " seconds";
+    LOG(INFO) << "TIME: Preparing the gradient and laplacian matrix took " << duration.count() / 1e6 << " seconds\n";
 }

@@ -48,7 +48,7 @@ void calc_divergence(const MatrixXX &pos,
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO) << "Time taken to calculate the divergence: " << duration.count() / 1e6 << " seconds";
+    LOG(INFO) << "Time taken to calculate the divergence: " << duration.count() / 1e6 << " seconds \n";
 }
 
 void pressure_poisson(const MatrixXX &pos,
@@ -68,6 +68,7 @@ void pressure_poisson(const MatrixXX &pos,
     LOG(INFO) << "Starting the pressure poisson solver";
     int max_iter = 10000;
     int current_iter = 0;
+    LOG(INFO) << "Max Iteration: " << max_iter;
     SpMatrixXX A(c.n_particles, c.n_particles);
     MatrixXX b(c.n_particles, 1);
     MatrixXX p(c.n_particles, 1);
@@ -78,7 +79,7 @@ void pressure_poisson(const MatrixXX &pos,
     // std::thread th_write1, th_write2;
 
     data_type max_div = 1000;
-    std::cout << "#Run;#Iter;Error;MaxDiv" << std::endl;
+    CLOG(INFO, "DATA") << "#Run,#Iter,Error,MaxDiv" ;
     while (max_div > 1e-6 && current_iter < max_iter)
     {
         current_iter++;
@@ -93,24 +94,22 @@ void pressure_poisson(const MatrixXX &pos,
 #pragma omp parallel for num_threads(10)
         for (unsigned int i = 0; i < c.n_particles; i++)
         {
-            if (p_type(i) == 3) // For solid particles
-            {
-                // continue; // skip the solid particles IMPORTANT!!!!!!
-                for (unsigned int j = 0; j < nearIndex[i].size(); j++)
-                {
-                    data_type a_ij;
-                    a_ij = c.mass / density(i);
-                    MatrixXX grad_mat(1, 2);
-                    grad_mat(0, 0) = gradient_x.coeff(i, nearIndex[i][j]);
-                    grad_mat(0, 1) = gradient_y.coeff(i, nearIndex[i][j]);
-                    a_ij = a_ij * (grad_mat.row(0).dot(normals.row(i)));
-#pragma omp critical(foo1)
-                    A.insert(i, nearIndex[i][j]) = a_ij;
-                }
-            }
+//             if (p_type(i) == 3) // For solid particles
+//             {
+//                 // continue; // skip the solid particles IMPORTANT!!!!!!
+//                 for (unsigned int j = 0; j < nearIndex[i].size(); j++)
+//                 {
+//                     data_type a_ij;
+//                     a_ij = c.mass / density(i);
+//                     MatrixXX grad_mat(1, 2);
+//                     grad_mat(0, 0) = gradient_x.coeff(i, nearIndex[i][j]);
+//                     grad_mat(0, 1) = gradient_y.coeff(i, nearIndex[i][j]);
+//                     a_ij = a_ij * (grad_mat.row(0).dot(normals.row(i)));
+// #pragma omp critical(foo1)
+//                     A.insert(i, nearIndex[i][j]) = a_ij;
+//                 }
+            // }
 
-            else
-            {
                 for (unsigned int j = 0; j < nearIndex[i].size(); j++)
                 {
                     if (nearDist[i][j] > 0 && nearDist[i][j] <= c.radius)
@@ -131,7 +130,6 @@ void pressure_poisson(const MatrixXX &pos,
                         b(i) = b(i) + temp * c.mass / density(i);
                     }
                 }
-            }
         }
 #pragma omp barrier
 
@@ -195,19 +193,27 @@ void pressure_poisson(const MatrixXX &pos,
 
         max_div = divergence.maxCoeff();
         // if (current_iter % 1 == 0)
-        std::cout << current_iter << ";" << lscg.iterations() << ";" << lscg.error() << ";" << max_div << std::endl;
-        int write_freq = 10;
+        CLOG(INFO, "DATA") << current_iter << "," << lscg.iterations() << "," << lscg.error() << "," << max_div;
+        //std::cout << current_iter << ";" << lscg.iterations() << ";" << lscg.error() << ";" << max_div << std::endl;
+        int write_freq = 50;
         if (current_iter % write_freq == 0)
         {
             // pos_write = pos;
             // div_write = divergence;
             // vel_write = vel;
-            std::string filename = std::to_string(c.dp_i) + "_divergence_" + std::to_string(current_iter) + ".csv";
+            std::string filename = std::to_string(c.dp_i) + "_divergence_" + std::to_string(current_iter) ;
             // th_write1 = std::thread(&writeMatrixToFile<MatrixXX&>, pos_write, div_write, filename);
-            writeMatrixToFile<MatrixXX &>(pos, divergence, filename);
-            filename = std::to_string(c.dp_i) + "_velocity_" + std::to_string(current_iter) + ".csv";
+            // writeMatrixToBinaryFile<MatrixXX>(pos, divergence, filename);
+            writeMatrixToFile<MatrixXX>(pos, divergence, filename);
+            // filename = std::to_string(c.dp_i) + "_divergence_" + std::to_string(current_iter) + ".csv";
+            // writeMatrixToFile<MatrixXX>(pos, divergence, filename);
+            // writeMatrixToFile<MatrixXX &>(pos, divergence, filename);
+            filename = std::to_string(c.dp_i) + "_velocity_" + std::to_string(current_iter) ;
             // th_write2 = std::thread(&writeMatrixToFile<MatrixXX&>, pos_write, vel_write, filename);
             writeMatrixToFile<MatrixXX>(pos, vel, filename);
+            // writeMatrixToBinaryFile<MatrixXX>(pos, vel, filename);
+            // filename = std::to_string(c.dp_i) + "_velocity_" + std::to_string(current_iter) + ".csv";
+            // writeMatrixToFile<MatrixXX>(pos, vel, filename);
         }
         // if (current_iter % write_freq == write_freq-1 || current_iter == max_iter-1)
 

@@ -23,38 +23,45 @@ int main(int argc, char* argv[])
     START_EASYLOGGINGPP(argc, argv);
     el::Configurations conf("./../../src/easyconfig.conf");
     el::Loggers::reconfigureAllLoggers(conf);
-    // el::Logger* DATALogger = el::Loggers::getLogger("DATA");
-    // el::Configurations conf2("./../../src/config_data.conf");
-    // el::Loggers::reconfigureLogger(DATALogger, conf2);
-
-
-    // conf.set(el::Level::Global, el::ConfigurationType::Format, "%datetime %level %msg");
-    // conf.set(el::Level::Global, el::ConfigurationType::Filename, "logs/my_log.log");
-    // el::Loggers::reconfigureLogger("default", conf);
-
-    // Step 3: Use custom logging levels
-    
-    // Use CLOG macro for logging with custom levels
+    el::Logger* DATALogger = el::Loggers::getLogger("DATA");
+    el::Configurations conf2("./../../src/config_Data_log.conf");
+    el::Loggers::reconfigureLogger(DATALogger, conf2);
+    // el::Logger* DATALogger = el::Loggers::getLogger("TIME");
+    // el::Configurations conf3("./../../src/config_Time_log.conf");
+    // el::Loggers::reconfigureLogger(DATALogger, conf3);
 
     LOG(INFO) << "Starting the simulation with different dp_i (factor to scale the radius of influence)"; 
     for (int i = 4; i <= 6; i=i+2)
     {
         LOG(INFO)<< "Starting simualtion with dp_i: " << i;
         start(i);
+        LOG(INFO) << "==================================";
+        LOG(INFO) << "==================================\n";
     }
     return 0;
 }
 
+/**
+ * Initializes and simulates the particle system.
+ *
+ * This function sets up the simulation by initializing particle properties such as position,
+ * velocity, density, and type. It configures the neighborhood data structures for particle
+ * interaction and prepares matrices for gradient and Laplacian calculations. The function
+ * also calculates divergence and executes the pressure Poisson solver to update particle
+ * velocities. Logging statements are used to track the progress and performance of each step.
+ *
+ * @param dp_i An integer representing the scaling factor for the radius of influence.
+ */
 void start(int dp_i)
 {
     auto start_complete = std::chrono::high_resolution_clock::now();
     auto start = std::chrono::high_resolution_clock::now();
     data_type size = 100;
-    data_type dp = 1;
-    auto boundary_fac = 20*dp;
+    data_type dp = 0.75;
+    data_type boundary_fac = 20*dp;
 
     constants c = define_constants(size, dp, boundary_fac, dp_i);
-    LOG(INFO) << c;
+    LOG(INFO) << c << std::endl;
 
     LOG(INFO) << "Intialising particle arrays";
     MatrixXX pos(c.n_particles, 2);
@@ -64,25 +71,22 @@ void start(int dp_i)
     MatrixXX density(c.n_particles, 1);
     density.fill(1000);
     Eigen::MatrixXi p_type(c.n_particles, 1);
-    MatrixXX normals(c.n_particles, 2);
-    normals.fill(0);
 
-    make_particles(c, pos, vel, density, p_type, normals);
-    MatrixXX normals_computed(c.n_particles, 2);
+    make_particles(c, pos, vel, density, p_type);
+    MatrixXX normals_computed(c.n_particles, 2);  // Normals can be computed only after NN
     normals_computed.fill(0);
 
-    writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini.csv");
-    writeMatrixToFile<MatrixXX&>(pos, normals, std::to_string(dp_i)+"normals.csv");
+    // writeMatrixToBinaryFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini");
+    writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini");
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO) << "Time taken to initialise the particles: " << duration.count()/1e6 << " seconds";
+    LOG(INFO) << "TIME: Initialise particles: " << duration.count()/1e6 << " seconds \n";
 
     LOG(INFO) << "Setting up the NN";
     start = std::chrono::high_resolution_clock::now();
     std::vector<std::vector<data_type>> nearDist(c.n_particles);
     std::vector<std::vector<unsigned>> nearIndex(c.n_particles); // [center particle, neighbor particles] generated from vecDSPH with correspongding idx
     initialise_NN(c, pos, nearIndex, nearDist);
-
     // Finding the maximum number of NN
     unsigned int count = 0;
     int total_NN = 0;
@@ -99,7 +103,7 @@ void start(int dp_i)
     LOG(INFO) << "Avergae number of NN: " << (float)total_NN/nearIndex.size();
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO)<< "Time taken to initialise the NN: " << duration.count()/1e6 << " seconds";
+    LOG(INFO)<< "TIME: Find NN: " << duration.count()/1e6 << " seconds\n";
 
     SpMatrixXX gradient_x(c.n_particles, c.n_particles);
     gradient_x.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
@@ -110,26 +114,25 @@ void start(int dp_i)
     SpMatrixXX laplacian(c.n_particles, c.n_particles);
     laplacian.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
     laplacian.setZero();
-    data_type sum_temp = laplacian.sum();
 
     prepare_grad_lap_matrix(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
     make_normals(c, pos, normals_computed, gradient_x, gradient_y, p_type, nearIndex, density);
-    writeMatrixToFile<MatrixXX&>(pos, normals_computed, std::to_string(dp_i)+"normals_computed.csv");
-    writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"particle_type.csv");
+    writeMatrixToFile<MatrixXX&>(pos, normals_computed, std::to_string(dp_i)+"normals_computed");
+    writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"particle_type");
     // exit(0);
 
     // DIVERGENCE
     MatrixXX divergence(c.n_particles, 1);
     divergence.fill(0);
     calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
-    std::string filename = std::to_string(dp_i)+"_divergence.csv";
+    std::string filename = std::to_string(dp_i)+"_divergence";
     writeMatrixToFile<MatrixXX&>(pos, divergence, filename);
 
     pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, normals_computed, c, count);
 
-    writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"_p_type.csv");
-    writeMatrixToFile<MatrixXX&>(pos, divergence, std::to_string(dp_i)+"divergence_2.csv");
-    writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel2.csv");
+    writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"_p_type");
+    writeMatrixToFile<MatrixXX&>(pos, divergence, std::to_string(dp_i)+"divergence_2");
+    writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel2");
     divergence = divergence.array().abs();
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_complete);

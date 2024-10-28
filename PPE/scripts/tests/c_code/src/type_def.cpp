@@ -56,7 +56,8 @@ void make_normals(const constants &c,
                     std::vector<std::vector<unsigned int>> &nearIndex,
                     const MatrixXX &density)
 {
-    LOG(INFO)<< "Making normals";
+    LOG(INFO)<< "Computing normals";
+    auto chrono_start = std::chrono::high_resolution_clock::now();
     // make normals
     #pragma omp parallel for
     for (unsigned int i = 0; i < c.n_particles; i++)
@@ -81,9 +82,12 @@ void make_normals(const constants &c,
             
         }
     }
+    auto chrono_end = std::chrono::high_resolution_clock::now();
+    auto chrono_duration = std::chrono::duration_cast<std::chrono::milliseconds>(chrono_end - chrono_start);
+    LOG(INFO) << "TIME: compute normals: " << chrono_duration.count() << " ms\n";
 }
 
-void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type, MatrixXX &normals)
+void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type)
 {
     
     LOG(INFO)<< "Making particles";
@@ -102,45 +106,17 @@ void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
             if (pos(index, 0) < c.x_y_n || pos(index, 0) > c.x_y_p || pos(index, 1) < c.x_y_n || pos(index, 1) > c.x_y_p)
             {
                 p_type(index) = 0; // p_type ==0 =>Boundary particle
-
-                // make normals to the center  for the boundary particles
-                if (pos(index, 0) < c.x_y_n)
-                {
-                    normals(index, 0) = 1;
-                    // normals(index, 1) = 0;
-                }
-                if (pos(index, 0) > c.x_y_p)
-                {
-                    normals(index, 0) = -1;
-                    // normals(index, 1) = 0;
-                }
-                if (pos(index, 1) < c.x_y_n)
-                {
-                    // normals(index, 0) = 0;
-                    normals(index, 1) = 1;
-                }
-                if (pos(index, 1) > c.x_y_p)
-                {
-                    // normals(index, 0) = 0;
-                    normals(index, 1) = -1;
-                }
             }
             else if (pos(index, 0) < c.radius/2 && pos(index, 0) >  -c.radius/2 && pos(index, 1) < -c.radius )
             // else if (pos(index, 0) < c.radius/2 && pos(index, 0) >  -c.radius/2 && pos(index, 1) < c.radius/2 && pos(index, 1) >  -c.radius/2)
             {
                 p_type(index) = 0;
-                normals(index, 0) = 0;
-                normals(index, 1) = 0;
-                /* code */
             }
             
             else if (pos(index, 0) < (c.radius *5) + c.radius/2 && pos(index, 0) >  (c.radius * 5) -c.radius/2 &&  pos(index, 1) >  (c.radius *5) -c.radius/2)
             // else if (pos(index, 0) < (c.radius *5) + c.radius/2 && pos(index, 0) >  (c.radius * 5) -c.radius/2 && pos(index, 1) < c.radius +c.radius/2 && pos(index, 1) >  c.radius -c.radius/2)
             {
                 p_type(index) = 0;
-                normals(index, 0) = 0;
-                normals(index, 1) = 0;
-                /* code */
             }
             else
             {
@@ -157,27 +133,5 @@ void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
     }
     LOG(INFO) << "Total number of fluids: "<< p_type.sum();
     LOG(INFO)<< "total particles: (index:number) "<< index <<" or "<< c.n_particles << std::endl;
-    // std::cout<< "total number of fluids: "<< p_type.sum() << std::endl;
-    // std::cout<< "total particles: (index:number) "<< index <<" or "<< c.n_particles << std::endl;
+
 }
-
-// void logging(std::string message, int level, std::string filename ="log.txt", bool toFile = true)
-// {
-//     // level 0: error
-//     // level 1: warning
-//     // level 2: info
-//     // level 3: debug
-    
-//     std::ofstream file;
-//     file.open(filename, std::ios::out);
-//     if (file.is_open())
-//     {
-//         file << message << std::endl;
-//         file.close();
-//     }
-//     else
-//     {
-//         std::cerr << "Unable to open file " << filename << std::endl;
-//     }
-
-// }

@@ -38,7 +38,7 @@ typedef Eigen::Vector<data_type, Eigen::Dynamic> VectorX;
 typedef Eigen::SparseMatrix<data_type, Eigen::RowMajor> SpMatrixXX;
 
 constants define_constants(data_type size, data_type dp, data_type boundary_fac, int dpi);
-void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type, MatrixXX &normals);
+void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type);
 
 void make_normals(const constants &c,
                     const MatrixXX &pos,
