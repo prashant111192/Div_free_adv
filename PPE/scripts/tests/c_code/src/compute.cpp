@@ -1,5 +1,4 @@
 #include "compute.hpp"
-
 void calc_divergence(const MatrixXX &pos,
                      const MatrixXX &vel,
                      const MatrixXX &density,
@@ -66,9 +65,10 @@ void pressure_poisson(const MatrixXX &pos,
                       const unsigned int count)
 {
     LOG(INFO) << "Starting the pressure poisson solver";
-    int max_iter = 10000;
+    int max_iter = 1;
     int current_iter = 0;
     LOG(INFO) << "Max Iteration: " << max_iter;
+
     SpMatrixXX A(c.n_particles, c.n_particles);
     MatrixXX b(c.n_particles, 1);
     MatrixXX p(c.n_particles, 1);
@@ -88,28 +88,17 @@ void pressure_poisson(const MatrixXX &pos,
         b.setZero();
         p.setZero(); // solution matrix
         A.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
+        std::vector<Eigen::Triplet<data_type>> tripletList;
+        tripletList.reserve(c.n_particles * count);
+        Eigen::VectorXd diagonal_entries = Eigen::VectorXd::Zero(c.n_particles);
         auto start = std::chrono::high_resolution_clock::now();
 
         LOG(INFO) << "Preparing the A matrix";
 #pragma omp parallel for num_threads(10)
         for (unsigned int i = 0; i < c.n_particles; i++)
         {
-//             if (p_type(i) == 3) // For solid particles
-//             {
-//                 // continue; // skip the solid particles IMPORTANT!!!!!!
-//                 for (unsigned int j = 0; j < nearIndex[i].size(); j++)
-//                 {
-//                     data_type a_ij;
-//                     a_ij = c.mass / density(i);
-//                     MatrixXX grad_mat(1, 2);
-//                     grad_mat(0, 0) = gradient_x.coeff(i, nearIndex[i][j]);
-//                     grad_mat(0, 1) = gradient_y.coeff(i, nearIndex[i][j]);
-//                     a_ij = a_ij * (grad_mat.row(0).dot(normals.row(i)));
-// #pragma omp critical(foo1)
-//                     A.insert(i, nearIndex[i][j]) = a_ij;
-//                 }
-            // }
 
+                data_type row_sum = 0;
                 for (unsigned int j = 0; j < nearIndex[i].size(); j++)
                 {
                     if (nearDist[i][j] > 0 && nearDist[i][j] <= c.radius)
@@ -176,15 +165,39 @@ void pressure_poisson(const MatrixXX &pos,
         duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         LOG(INFO) << "Done with the sanity check and it took " << duration.count() / 1e6 << " seconds";
 
+        start = std::chrono::high_resolution_clock::now();
+        bool check = check_SPD(A);
         using namespace Eigen;
 
         // LEAST SQUARES Conjugate Gradient SOLVER
-        LeastSquaresConjugateGradient<SparseMatrix<data_type>> lscg;
-        DiagonalPreconditioner<data_type> precond;
-        // lscg.setMaxIterations(500);
-        lscg.setTolerance(1e-12);
-        lscg.compute(A);
-        p = lscg.solve(b);
+        // %%%%%%%%%%%%%%%%%%%%%
+        // LeastSquaresConjugateGradient<SparseMatrix<data_type>, DiagonalPreconditioner<data_type>> solver;
+        // // solver.setMaxIterations(500);
+        // solver.setTolerance(1e-12);
+        // solver.compute(A);
+        // p = solver.solve(b);
+        // end = std::chrono::high_resolution_clock::now();
+        // duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        // LOG(INFO) << "Done with the solver and it took " << duration.count() / 1e6 << " seconds";
+        // %%%%%%%%%%%%%%%%%%%%%
+
+        // solverSTAB SOLVER
+        // %%%%%%%%%%%%%%%%%%%%%
+        BiCGSTAB<SparseMatrix<data_type>> solver;
+        // BiCGSTAB<SparseMatrix<data_type>, DiagonalPreconditioner<data_type>> solver;
+        // solver.setMaxIterations(500);
+        // solver.preconditioner().setDroptol(1e-5);
+        solver.setTolerance(1e-12);
+        solver.compute(A);
+        if (solver.info() != Success)
+        {
+            LOG(FATAL) << solver.info();
+        }
+        p = solver.solve(b);
+        end = std::chrono::high_resolution_clock::now();
+        duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        LOG(INFO) << "Done with the solver and it took " << duration.count() / 1e6 << " seconds";
+        // %%%%%%%%%%%%%%%%%%%%%
 
         MatrixXX q(c.n_particles, 2);
         q = cal_div_part_vel(pos, density, p_type, nearIndex, nearDist, p, gradient_x, gradient_y, c);
@@ -193,9 +206,9 @@ void pressure_poisson(const MatrixXX &pos,
 
         max_div = divergence.maxCoeff();
         // if (current_iter % 1 == 0)
-        CLOG(INFO, "DATA") << current_iter << "," << lscg.iterations() << "," << lscg.error() << "," << max_div;
-        //std::cout << current_iter << ";" << lscg.iterations() << ";" << lscg.error() << ";" << max_div << std::endl;
-        int write_freq = 50;
+        CLOG(INFO, "DATA") << current_iter << "," << solver.iterations() << "," << solver.error() << "," << max_div;
+        //std::cout << current_iter << ";" << solver.iterations() << ";" << solver.error() << ";" << max_div << std::endl;
+        int write_freq = 1;
         if (current_iter % write_freq == 0)
         {
             // pos_write = pos;
@@ -323,4 +336,16 @@ void saving_grads(const MatrixXX &pos,
 {
     
 
+}
+bool check_SPD(const SpMatrixXX &mat)
+{
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> spd_check;
+    spd_check.compute(mat);
+    if (spd_check.info() == Eigen::Success) {
+        std::cerr << "Matrix is SPD." << std::endl;
+        return true;
+    } else {
+        std::cerr << "Matrix is not SPD." << std::endl;
+        return false;
+    }
 }

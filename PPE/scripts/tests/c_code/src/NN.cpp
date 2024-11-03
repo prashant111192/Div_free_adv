@@ -17,23 +17,30 @@ void initialise_NN(constants &c,
 {
   LOG(INFO) << "Initialising the NN";
   data_type bin_size = c.radius * 2;
+  data_type minx = pos.col(0).minCoeff();
+  data_type maxx = pos.col(0).maxCoeff();
+  data_type miny = pos.col(1).minCoeff();
+  data_type maxy = pos.col(1).maxCoeff();
   int n_bins_x, n_bins_y;
-  if (c.x_y_bn < 0)
-  {
-    n_bins_x = 4 + (c.x_y_bp + abs(c.x_y_bn)) / bin_size;
-  }
-  else
-  {
-    n_bins_x = 4 + (c.x_y_bp) / bin_size;
-  }
-  if (c.x_y_bn < 0)
-  {
-    n_bins_y = 4 + (c.x_y_bp + abs(c.x_y_bn)) / bin_size;
-  }
-  else
-  {
-    n_bins_y = 4 + (c.x_y_bp) / bin_size;
-  }
+  n_bins_x = 4 + (maxx - minx) / bin_size;
+  n_bins_y = 4 + (maxy - miny) / bin_size;
+
+  // if (c.x_y_bn < 0)
+  // {
+  //   n_bins_x = 4 + (c.x_y_bp + abs(c.x_y_bn)) / bin_size;
+  // }
+  // else
+  // {
+  //   n_bins_x = 4 + (c.x_y_bp) / bin_size;
+  // }
+  // if (c.x_y_bn < 0)
+  // {
+  //   n_bins_y = 4 + (c.x_y_bp + abs(c.x_y_bn)) / bin_size;
+  // }
+  // else
+  // {
+  //   n_bins_y = 4 + (c.x_y_bp) / bin_size;
+  // }
   int total_bins = n_bins_x * n_bins_y;
   LOG(INFO) << "Total number of bins: " << total_bins;
 
@@ -43,8 +50,8 @@ void initialise_NN(constants &c,
   {
     data_type actual_x = pos(i, 0);
     data_type actual_y = pos(i, 1); 
-    data_type x = pos(i, 0) - c.x_y_bn + (2 * bin_size);
-    data_type y = pos(i, 1) - c.x_y_bn + (2 * bin_size);
+    data_type x = pos(i, 0) - minx + (2 * bin_size);
+    data_type y = pos(i, 1) - miny + (2 * bin_size);
 
     unsigned bin_x = x / bin_size;
     unsigned bin_y = y / bin_size;

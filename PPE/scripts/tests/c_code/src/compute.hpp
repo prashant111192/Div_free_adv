@@ -48,4 +48,6 @@ MatrixXX cal_div_part_vel(const MatrixXX &pos,
                 const Eigen::SparseMatrix<data_type> &gradient_x,
                 const Eigen::SparseMatrix<data_type> &gradient_y,
                 const constants &c);
+
+bool check_SPD(const SpMatrixXX &mat);
 #endif

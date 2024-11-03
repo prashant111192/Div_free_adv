@@ -20,4 +20,13 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
                             SpMatrixXX &gradient_x,
                             SpMatrixXX &gradient_y,
                             SpMatrixXX &laplacian);
+
+void prepare_grad_lap_matrix_fast(const MatrixXX &pos,
+                             const std::vector<std::vector<unsigned int>> &nearIndex,
+                             const std::vector<std::vector<data_type>> &nearDist,
+                             const constants &c,
+                             SpMatrixXX &gradient_x,
+                             SpMatrixXX &gradient_y,
+                             SpMatrixXX &laplacian,
+                             int max_NN);
 #endif

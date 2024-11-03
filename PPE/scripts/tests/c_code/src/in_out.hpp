@@ -3,14 +3,18 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <filesystem>
+#include <cstring>
 
 #include "type_def.hpp"
+
+void make_from_dsph(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type, MatrixXX &pressure);
 
 template <typename T>
 void writeMatrixToFile(const MatrixXX &pos, T &x, std::string filename)
     {
     // int precision = 6;
-    filename += ".csv";
+    filename = filename + ".csv";
     LOG(INFO)<< "Writing to CSV: "<< filename;
     auto chrono_start = std::chrono::high_resolution_clock::now();
     std::ofstream file(filename, std::ios::out);
@@ -38,7 +42,7 @@ void writeMatrixToFile(const MatrixXX &pos, T &x, std::string filename)
 
 template <typename T>
 void writeMatrixToBinaryFile(const MatrixXX &pos, T &x, const std::string &filename) {
-    filename += ".bin";
+    filename = filename + ".bin";
     LOG(INFO) << "Writing to binary: " << filename;
     auto chrono_start = std::chrono::high_resolution_clock::now();
     std::ofstream file(filename, std::ios::out | std::ios::binary);
@@ -61,7 +65,8 @@ void writeMatrixToBinaryFile(const MatrixXX &pos, T &x, const std::string &filen
         
         file.close();
         LOG(INFO) << "Matrix written to " << filename;
-    } else {
+    } 
+    else {
         LOG(ERROR) << "Unable to open file " << filename;
     }
     auto chrono_end = std::chrono::high_resolution_clock::now();

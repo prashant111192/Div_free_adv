@@ -12,12 +12,13 @@ USE_NATIVE_CPU_OPTIMIZATION = YES
 
 #==============================================================================
 # Directories and flags
+CXXFLAGS = -std=c++17 -I ./eigen/
 ifeq ($(USE_DEBUG), YES)
 	EXECS_DIR = ./../bin/debug
-	CXXFLAGS = -g -Wall -I ./eigen/
+	CXXFLAGS += -g -Wall  
 else
 	EXECS_DIR = ./../bin/release
-	CXXFLAGS = -O3 -I ./eigen/
+	CXXFLAGS += -O3 
 	ifeq ($(USE_FLAGS), YES)
 		ifeq ($(USE_FAST_MATH), YES)
 			CXXFLAGS += -ffast-math
@@ -28,7 +29,7 @@ else
 	endif
 endif
 ifeq ($(USE_PARALLEL), YES)
-	CXXFLAGS += -fopenmp
+	CXXFLAGS += -fopenmp 
 endif
 
 SRC = $(wildcard *.cpp)

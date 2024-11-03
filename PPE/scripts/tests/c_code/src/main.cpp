@@ -56,8 +56,8 @@ void start(int dp_i)
 {
     auto start_complete = std::chrono::high_resolution_clock::now();
     auto start = std::chrono::high_resolution_clock::now();
-    data_type size = 100;
-    data_type dp = 0.75;
+    data_type size = 1;
+    data_type dp = 0.01;
     data_type boundary_fac = 20*dp;
 
     constants c = define_constants(size, dp, boundary_fac, dp_i);
@@ -70,9 +70,11 @@ void start(int dp_i)
     vel.fill(0);
     MatrixXX density(c.n_particles, 1);
     density.fill(1000);
-    Eigen::MatrixXi p_type(c.n_particles, 1);
+    Eigen::MatrixXi p_type(c.n_particles, 1); // 1 = fluid, 0 = boundary
+    MatrixXX pressure(c.n_particles, 1);
 
-    make_particles(c, pos, vel, density, p_type);
+    // make_particles(c, pos, vel, density, p_type);
+    make_from_dsph(c, pos, vel, density, p_type, pressure);
     MatrixXX normals_computed(c.n_particles, 2);  // Normals can be computed only after NN
     normals_computed.fill(0);
 
@@ -101,6 +103,7 @@ void start(int dp_i)
     }
     LOG(INFO) << "Maximum number of NN: " << count;
     LOG(INFO) << "Avergae number of NN: " << (float)total_NN/nearIndex.size();
+    LOG(INFO) << "Maximum number of NN: " << count;
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     LOG(INFO)<< "TIME: Find NN: " << duration.count()/1e6 << " seconds\n";
@@ -115,7 +118,8 @@ void start(int dp_i)
     laplacian.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
     laplacian.setZero();
 
-    prepare_grad_lap_matrix(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
+    prepare_grad_lap_matrix_fast(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian, count);
+    // prepare_grad_lap_matrix_fast(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
     make_normals(c, pos, normals_computed, gradient_x, gradient_y, p_type, nearIndex, density);
     writeMatrixToFile<MatrixXX&>(pos, normals_computed, std::to_string(dp_i)+"normals_computed");
     writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"particle_type");

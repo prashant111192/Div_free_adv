@@ -3,7 +3,19 @@
 constants define_constants(data_type size, data_type dp, data_type boundary_fac, int dpi)
 {
     LOG(INFO)<< "Defining constants";
+
     constants c;
+    
+    // c.n_particles = 17161;
+    c.n_particles = 76729;
+    c.dp = 0.0;
+    c.h = 0.01;
+    c.h_fac = c.h / c.dp;
+    c.radius = c.h * 2; // kh, radius of influence
+    c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
+    c.mass = 0.016;
+    c.Eta = 1e-12;
+    /*
     c.h = 0.02;            // why was this used??
     c.dp = dp;
     c.h_fac = c.h / c.dp; // originally used to scacle h with dp
@@ -22,6 +34,7 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac,
     c.dp_i = dpi;       // factor to scale the radius of influence
     c.radius = dpi * dp; // kh, radius of influence
     c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
+    */
     return c;
 }
 
@@ -62,7 +75,7 @@ void make_normals(const constants &c,
     #pragma omp parallel for
     for (unsigned int i = 0; i < c.n_particles; i++)
     {
-        if (p_type(i) != 1)
+        if (p_type(i) == 0)
         {
             for (unsigned int j = 0; j < nearIndex[i].size(); j++)
             {

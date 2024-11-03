@@ -1,87 +1,46 @@
 #include "in_out.hpp"
 
-// void writeMatrixToFile(MatrixXX matrix, const string& filename) {
+void make_from_dsph(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type, MatrixXX &pressure)
+{
 
-// template <typename T>
-// int getDimension(const std::vector<T> &)
-// {
-//     return 1;
-// }
-
-// // Recursive case for higher-dimensional vectors
-// template <typename T>
-// int getDimension(const std::vector<std::vector<T>> &vec)
-// {
-//     return 1 + getDimension(vec[0]);
-// }
-
-// template <typename ele_type>
-// ostream &operator<<(ostream &os, const vector<ele_type> &vect_name)
-// {
-//     for (auto itr : vect_name)
-//     {
-//         os << itr << " ";
-//     }
-//     return os;
-// }
-
-// template <typename T>
-// void write_file(std::vector<std::vector<T>> x, string filename)
-// {
-
-//     fstream file;
-//     file.open(filename, ios::out);
-//     std::cout << "2D vector" << endl;
-//     for (int i = 0; i < x.size(); i++)
-//     {
-//         for (int j = 0; j < x[i].size(); j++)
-//         {
-//             file << x[i][j];
-//             if (j<x[i].size()-1)
-//             {
-//                 file << ",";
-//             }
-//         }
-//         file << endl;
-//     }
-//     file.close();
-// }
-
-// template <typename T>
-// void write_file(std::vector<T> x, string filename)
-// {
-//     fstream file;
-//     file.open(filename, ios::out);
-//     std::cout << "1D vector" << endl;
-//     for (int i = 0; i < x.size(); i++)
-//     {
-//         file << x[i] << endl;
-//     }
-//     file.close();
-// }
-
-// template <typename T>
-// void save_data(T x, string filename)
-// {
-//     // save the vector as a csv file
-//     // x: vector to be saved, can be 1D or 2D
-//     // filename: name of the file to be saved
-//     int dim = getDimension(x);
-//     std::cout << "Dimension: " << dim << endl;
-//     if (x.size() == 0)
-//     {
-//         std::cout << "Empty vector" << endl;
-//     }
-//     else
-//     {
-//         std::cout<< x.size() << " value" << x[0]<< std::endl;
-//         if (dim == 2)
-//         {
-//             write_file(x, filename);
-//         }
-//         if (dim == 1)
-//         {
-//             write_file(x, filename);
-//         }
-//     }
-// }
+    LOG(INFO) << "Reading DSPH file";
+    std::string path("./DSPHdata/");
+    std::string ext(".csv");
+    for (auto &file : std::filesystem::directory_iterator(path))
+    {
+        if  (file.path().extension() == ext)
+        {
+            std::string filename = file.path().string();
+            // std::string filename = file.path().filename().string();
+            std::ifstream inFile(filename);
+            LOG(INFO) << filename;
+            std::string datLineStr;
+            std::getline(inFile, datLineStr);
+            long int current_line = 0;
+            while(std::getline(inFile, datLineStr))
+            {
+                if (current_line > 3)
+                {
+                    std::stringstream datLine(datLineStr);
+                    std::string data;
+                    std::vector<data_type> dataVec;
+                    while(std::getline(datLine, data, ';'))
+                    {
+                        dataVec.push_back(std::stod(data));
+                    }
+                    pos(current_line-3, 0) = dataVec[0];
+                    pos(current_line-3, 1) = dataVec[2];
+                    vel(current_line-3, 0) = dataVec[4];
+                    vel(current_line-3, 1) = dataVec[6];
+                    density(current_line-3, 0) = dataVec[7];
+                    pressure(current_line-3, 0) = dataVec[8];
+                    if (dataVec[8] == 3) // Fluid
+                        p_type(current_line-3, 0) = 1;
+                    else                 // Boundary
+                        p_type(current_line-3, 0) = 0;
+                }
+                current_line ++;
+            }
+        }
+    }
+}
