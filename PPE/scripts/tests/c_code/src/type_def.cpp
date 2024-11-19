@@ -5,6 +5,25 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac,
     LOG(INFO)<< "Defining constants";
 
     constants c;
+
+    c.h = 0.127292;
+    c.dp = 0.075;
+    c.dp_i = 0;
+    c.h_fac;
+    c.mass = 5.625;
+    c.boundary_size = 0;
+    c.x_y_bn = 0;
+    c.x_y_bp = 0;
+    c.x_y_n = 0;
+    c.x_y_p = 0;
+    c.resolution = 0;
+    c.n_particles = 98241;
+    c.mid_idx = 0;
+    c.Eta = 1e-12;
+    c.radius = c.dp * 0.2 * dpi;               // kh, radius of influence
+    c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
+
+    // c.radius = 0.2545584 *5; // kh, radius of influence
     
     // c.n_particles = 17161;
     // c.n_particles = 14230;
@@ -31,15 +50,6 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac,
     // c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
     // c.mass = 6.4;
     // c.Eta = 1e-12;
-    c.n_particles = 98241;
-    c.dp = 0.075;
-    c.h = 0.127292;
-    c.h_fac = c.h / c.dp;
-    c.radius = c.dp * 0.2 *  dpi; // kh, radius of influence
-    // c.radius = 0.2545584 *5; // kh, radius of influence
-    c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
-    c.mass = 5.625;
-    c.Eta = 1e-12;
     /*
     c.h = 0.02;            // why was this used??
     c.dp = dp;
@@ -97,17 +107,10 @@ void make_normals(const constants &c,
     LOG(INFO)<< "Computing normals";
     auto chrono_start = std::chrono::high_resolution_clock::now();
     // make normals
-    // std::cout<< "IN MAKE NORMALS" << std::endl;
     #pragma omp parallel for
     for (unsigned int i = 0; i < c.n_particles; i++)
     {
 
-        // if (pos(i, 0) > -0.1 && pos(i, 0) < 0.1 && pos(i, 1) > -0.1 && pos(i, 1) < 0.1)
-        // {
-        //     std::cout<< "position:" << pos(i, 0) << " " << pos(i, 1) << std::endl;
-        //     std::cout<< "density:" << density(i) << std::endl;
-        //     std::cout<< "type:" << p_type(i) << std::endl;
-        // }
         if (p_type(i) == 0)
         {
             for (unsigned int j = 0; j < nearIndex[i].size(); j++)

@@ -30,14 +30,7 @@ int main(int argc, char* argv[])
     el::Configurations conf3("./../../src/log_time_config.conf");
     el::Loggers::reconfigureLogger(TIMELogger, conf3);
 
-    LOG(INFO) << "Starting the simulation with different dp_i (factor to scale the radius of influence)"; 
-    for (int i = 10; i <= 100; i++)
-    {
-        LOG(INFO)<< "Starting simualtion with Factor for radius of influence: " << i;
-        start(i);
-        LOG(INFO) << "==================================";
-        LOG(INFO) << "==================================\n";
-    }
+    start(1);
     return 0;
 }
 
@@ -164,6 +157,7 @@ void start(int dp_i)
     */
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_complete);
+    make_dsph_input(c, pos, vel, density, p_type, pressure);
     CLOG(INFO, "TIME") << "Total time taken for the simulation(s): " << duration.count()/1e6;
 }
 

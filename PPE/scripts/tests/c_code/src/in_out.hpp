@@ -5,10 +5,20 @@
 #include <string>
 #include <filesystem>
 #include <cstring>
+#include <experimental/random>
 
 #include "type_def.hpp"
 
-void make_from_dsph(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type, MatrixXX &pressure);
+void make_from_dsph(const constants &c,
+                    MatrixXX &pos, 
+                    MatrixXX &vel, 
+                    MatrixXX &density,
+                    Eigen::MatrixXi &p_type, 
+                    MatrixXX &pressure);
+void make_dsph_input(const constants &c, MatrixXX &pos,
+                     MatrixXX &vel, MatrixXX &density,
+                     Eigen::MatrixXi &p_type,
+                     MatrixXX &pressure);
 
 template <typename T>
 void writeMatrixToFile(const MatrixXX &pos, T &x, std::string filename)
@@ -30,7 +40,6 @@ void writeMatrixToFile(const MatrixXX &pos, T &x, std::string filename)
             }
             file << "\n";
         }
-        SSD
         LOG(INFO) << "Matrix written to " << filename;
     } else {
         LOG(ERROR) << "Unable to open file " << filename;

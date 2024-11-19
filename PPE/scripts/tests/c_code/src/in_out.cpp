@@ -87,3 +87,57 @@ void make_from_dsph(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
         }
     }
 }
+
+
+void make_dsph_input(const constants &c, MatrixXX &pos,
+                     MatrixXX &vel, MatrixXX &density,
+                     Eigen::MatrixXi &p_type,
+                     MatrixXX &pressure)
+{
+    std::string filename = "adv.csv";
+    LOG(INFO)<< "Making DSPH input file called: "<< filename;
+    auto chrono_start = std::chrono::high_resolution_clock::now();
+
+    std::ofstream file(filename, std::ios::out);
+    if (file.is_open()) {
+        for (int i = 0; i<3; i++)
+        {
+            file << "JUST PLACEHOLDERS\n";
+        }
+
+        for (int i = 0; i < pos.rows(); ++i) {
+            int Type, MK;
+            if (p_type(i, 0) == 1) // Fluid
+            {
+                Type = 3;
+                MK = std::experimental::randint(1, 2);
+            }
+            else // Solids
+            {
+                Type = 0;
+                MK = 10;
+            }
+
+            file<< pos(i,0) << ";" << 
+            0 << ";" <<
+            pos(i,1) << ";" << 
+            i << ";" <<
+            vel(i,0) << ";" << 
+            0 << ";" <<
+            vel(i,1) << ";" << 
+            density(i,0) << ";" << 
+            Type<< ";"<<
+            MK << ";" << "\n";
+        }
+        file.close();
+        LOG(INFO) << "Matrix written to " << filename;
+    } else {
+        LOG(ERROR) << "Unable to open file " << filename;
+    }
+    auto chrono_end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(chrono_end - chrono_start).count();
+    CLOG(INFO, "TIME") << "Writing ADVFILE (csv) "<< filename << " took(s):" << duration/10e6 ;
+    
+    
+    
+}
