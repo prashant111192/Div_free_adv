@@ -31,9 +31,9 @@ int main(int argc, char* argv[])
     // el::Loggers::reconfigureLogger(DATALogger, conf3);
 
     LOG(INFO) << "Starting the simulation with different dp_i (factor to scale the radius of influence)"; 
-    for (int i = 4; i <= 6; i=i+2)
+    for (int i = 10; i <= 100; i++)
     {
-        LOG(INFO)<< "Starting simualtion with dp_i: " << i;
+        LOG(INFO)<< "Starting simualtion with Factor for radius of influence: " << i;
         start(i);
         LOG(INFO) << "==================================";
         LOG(INFO) << "==================================\n";
@@ -65,6 +65,7 @@ void start(int dp_i)
 
     LOG(INFO) << "Intialising particle arrays";
     MatrixXX pos(c.n_particles, 2);
+    std::cout<< "size: " << pos.rows() << std::endl;
     pos.fill(0);
     MatrixXX vel(c.n_particles, 2);
     vel.fill(0);
@@ -79,7 +80,7 @@ void start(int dp_i)
     normals_computed.fill(0);
 
     // writeMatrixToBinaryFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini");
-    writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini");
+    // writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini");
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     LOG(INFO) << "TIME: Initialise particles: " << duration.count()/1e6 << " seconds \n";
@@ -118,12 +119,31 @@ void start(int dp_i)
     laplacian.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
     laplacian.setZero();
 
+    //     std::cout<< "IN MAIN"<< std::endl;
+    // for (unsigned int i = 0; i < c.n_particles; i++){
+    //     if (pos(i, 0) > -0.1 && pos(i, 0) < 0.1 && pos(i, 1) > -0.1 && pos(i, 1) < 0.1)
+    //     {
+    //         std::cout<< "position:" << pos(i, 0) << " " << pos(i, 1) << std::endl;
+    //         std::cout<< "density:" << density(i) << std::endl;
+    //         std::cout<< "type:" << p_type(i) << std::endl;
+    //     }
+    // }
+
     prepare_grad_lap_matrix_fast(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian, count);
     // prepare_grad_lap_matrix_fast(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
     make_normals(c, pos, normals_computed, gradient_x, gradient_y, p_type, nearIndex, density);
     writeMatrixToFile<MatrixXX&>(pos, normals_computed, std::to_string(dp_i)+"normals_computed");
-    writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"particle_type");
-    // exit(0);
+    // writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"particle_type");
+    //     std::cout<< "IN MAIN"<< std::endl;
+    // for (unsigned int i = 0; i < c.n_particles; i++){
+    //     if (pos(i, 0) > -0.1 && pos(i, 0) < 0.1 && pos(i, 1) > -0.1 && pos(i, 1) < 0.1)
+    //     {
+    //         std::cout<< "position:" << pos(i, 0) << " " << pos(i, 1) << std::endl;
+    //         std::cout<< "density:" << density(i) << std::endl;
+    //         std::cout<< "type:" << p_type(i) << std::endl;
+    //     }
+    // }
+
 
     // DIVERGENCE
     MatrixXX divergence(c.n_particles, 1);
@@ -131,13 +151,17 @@ void start(int dp_i)
     calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
     std::string filename = std::to_string(dp_i)+"_divergence";
     writeMatrixToFile<MatrixXX&>(pos, divergence, filename);
-
+    divergence = divergence.array().abs();
+    CLOG(INFO, "DATA")  <<dp_i * 0.2<< ";"<< divergence.maxCoeff() ;
+/*
     pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, normals_computed, c, count);
 
     writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"_p_type");
     writeMatrixToFile<MatrixXX&>(pos, divergence, std::to_string(dp_i)+"divergence_2");
     writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel2");
-    divergence = divergence.array().abs();
+    // divergence = divergence.array().abs();
+    // CLOG(INFO, "DATA")  <<dp_i<< ";"<< divergence.maxCoeff() ;
+    */
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_complete);
     LOG(INFO) << "Total time taken for the simulation: " << duration.count()/1e6 << " seconds";

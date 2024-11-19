@@ -48,6 +48,7 @@ void calc_divergence(const MatrixXX &pos,
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     LOG(INFO) << "Time taken to calculate the divergence: " << duration.count() / 1e6 << " seconds \n";
+    // CLOG(INFO, "DATA") << "MAX DIV:" << divergence.maxCoeff() ;
 }
 
 void pressure_poisson(const MatrixXX &pos,
@@ -65,7 +66,7 @@ void pressure_poisson(const MatrixXX &pos,
                       const unsigned int count)
 {
     LOG(INFO) << "Starting the pressure poisson solver";
-    int max_iter = 1;
+    int max_iter = 100;
     int current_iter = 0;
     LOG(INFO) << "Max Iteration: " << max_iter;
 
@@ -79,7 +80,7 @@ void pressure_poisson(const MatrixXX &pos,
     // std::thread th_write1, th_write2;
 
     data_type max_div = 1000;
-    CLOG(INFO, "DATA") << "#Run,#Iter,Error,MaxDiv" ;
+    // CLOG(INFO, "DATA") << "#Run,#Iter,Error,MaxDiv" ;
     while (max_div > 1e-6 && current_iter < max_iter)
     {
         current_iter++;
@@ -166,7 +167,7 @@ void pressure_poisson(const MatrixXX &pos,
         LOG(INFO) << "Done with the sanity check and it took " << duration.count() / 1e6 << " seconds";
 
         start = std::chrono::high_resolution_clock::now();
-        bool check = check_SPD(A);
+        // bool check = check_SPD(A);
         using namespace Eigen;
 
         // LEAST SQUARES Conjugate Gradient SOLVER
@@ -206,9 +207,9 @@ void pressure_poisson(const MatrixXX &pos,
 
         max_div = divergence.maxCoeff();
         // if (current_iter % 1 == 0)
-        CLOG(INFO, "DATA") << current_iter << "," << solver.iterations() << "," << solver.error() << "," << max_div;
+        // CLOG(INFO, "DATA") << current_iter << "," << solver.iterations() << "," << solver.error() << "," << max_div;
         //std::cout << current_iter << ";" << solver.iterations() << ";" << solver.error() << ";" << max_div << std::endl;
-        int write_freq = 1;
+        int write_freq = 100;
         if (current_iter % write_freq == 0)
         {
             // pos_write = pos;

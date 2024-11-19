@@ -7,13 +7,38 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac,
     constants c;
     
     // c.n_particles = 17161;
-    c.n_particles = 76729;
-    c.dp = 0.0;
-    c.h = 0.01;
+    // c.n_particles = 14230;
+    // c.dp = 0.01;
+    // c.h = 0.025;
+    // c.h_fac = c.h / c.dp;
+    // c.radius = c.h * 2; // kh, radius of influence
+    // c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
+    // c.mass = 0.1;
+    // c.Eta = 1e-12;
+    // c.n_particles = 55410;
+    // c.dp = 0.1;
+    // c.h = 0.207846;
+    // c.h_fac = c.h / c.dp;
+    // c.radius = 0.4156922; // kh, radius of influence
+    // c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
+    // c.mass = 1;
+    // c.Eta = 1e-12;
+    // c.n_particles = 86389;
+    // c.dp = 0.08;
+    // c.h = 0.135765;
+    // c.h_fac = c.h / c.dp;
+    // c.radius = 0.2714529; // kh, radius of influence
+    // c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
+    // c.mass = 6.4;
+    // c.Eta = 1e-12;
+    c.n_particles = 98241;
+    c.dp = 0.075;
+    c.h = 0.127292;
     c.h_fac = c.h / c.dp;
-    c.radius = c.h * 2; // kh, radius of influence
+    c.radius = c.dp * 0.2 *  dpi; // kh, radius of influence
+    // c.radius = 0.2545584 *5; // kh, radius of influence
     c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
-    c.mass = 0.016;
+    c.mass = 5.625;
     c.Eta = 1e-12;
     /*
     c.h = 0.02;            // why was this used??
@@ -72,9 +97,17 @@ void make_normals(const constants &c,
     LOG(INFO)<< "Computing normals";
     auto chrono_start = std::chrono::high_resolution_clock::now();
     // make normals
+    // std::cout<< "IN MAKE NORMALS" << std::endl;
     #pragma omp parallel for
     for (unsigned int i = 0; i < c.n_particles; i++)
     {
+
+        // if (pos(i, 0) > -0.1 && pos(i, 0) < 0.1 && pos(i, 1) > -0.1 && pos(i, 1) < 0.1)
+        // {
+        //     std::cout<< "position:" << pos(i, 0) << " " << pos(i, 1) << std::endl;
+        //     std::cout<< "density:" << density(i) << std::endl;
+        //     std::cout<< "type:" << p_type(i) << std::endl;
+        // }
         if (p_type(i) == 0)
         {
             for (unsigned int j = 0; j < nearIndex[i].size(); j++)

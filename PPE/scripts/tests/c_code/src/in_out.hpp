@@ -30,7 +30,7 @@ void writeMatrixToFile(const MatrixXX &pos, T &x, std::string filename)
             }
             file << "\n";
         }
-        file.close();
+        SSD
         LOG(INFO) << "Matrix written to " << filename;
     } else {
         LOG(ERROR) << "Unable to open file " << filename;
