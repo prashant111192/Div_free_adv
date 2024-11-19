@@ -36,8 +36,8 @@ void writeMatrixToFile(const MatrixXX &pos, T &x, std::string filename)
         LOG(ERROR) << "Unable to open file " << filename;
     }
     auto chrono_end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(chrono_end - chrono_start).count();
-    LOG(INFO) << "Time taken : " << duration << " ms\n";
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(chrono_end - chrono_start).count();
+    CLOG(INFO, "TIME") << "Writing (csv) "<< filename << " took(s):" << duration/10e6 ;
 }
 
 template <typename T>
@@ -70,8 +70,8 @@ void writeMatrixToBinaryFile(const MatrixXX &pos, T &x, const std::string &filen
         LOG(ERROR) << "Unable to open file " << filename;
     }
     auto chrono_end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(chrono_end - chrono_start).count();
-    LOG(INFO) << "Time taken: " << duration << " ms and the max size should be " << x.rows() * x.cols() * sizeof(data_type) +(x.rows() * 2 * sizeof(data_type)) + 2 * sizeof(int) << " bytes\n";
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(chrono_end - chrono_start).count();
+    CLOG(INFO, "TIME") << "Writing (binary) "<< filename << " took(s):" << duration/10e6 ;
 }
 
 #endif

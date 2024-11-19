@@ -47,7 +47,7 @@ void calc_divergence(const MatrixXX &pos,
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO) << "Time taken to calculate the divergence: " << duration.count() / 1e6 << " seconds \n";
+    CLOG(INFO, "TIME") << "Divergecnce calculation(s): " << duration.count() / 1e6;
     // CLOG(INFO, "DATA") << "MAX DIV:" << divergence.maxCoeff() ;
 }
 
@@ -125,7 +125,7 @@ void pressure_poisson(const MatrixXX &pos,
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        LOG(INFO) << "Done with patrtial creation of A and it took " << duration.count() / 1e6 << " seconds";
+        CLOG(INFO, "TIME") << "Patrtial creation of A and it took (s):" << duration.count() / 1e6 ;
         start = std::chrono::high_resolution_clock::now();
 
 #pragma omp parallel for num_threads(10)
@@ -164,7 +164,7 @@ void pressure_poisson(const MatrixXX &pos,
         }
         end = std::chrono::high_resolution_clock::now();
         duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        LOG(INFO) << "Done with the sanity check and it took " << duration.count() / 1e6 << " seconds";
+        CLOG(INFO, "TIME") << "Sanity check took(s):" << duration.count() / 1e6;
 
         start = std::chrono::high_resolution_clock::now();
         // bool check = check_SPD(A);
@@ -197,7 +197,7 @@ void pressure_poisson(const MatrixXX &pos,
         p = solver.solve(b);
         end = std::chrono::high_resolution_clock::now();
         duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        LOG(INFO) << "Done with the solver and it took " << duration.count() / 1e6 << " seconds";
+        CLOG(INFO, "TIME") << "Linear solver(s):" << duration.count() / 1e6;
         // %%%%%%%%%%%%%%%%%%%%%
 
         MatrixXX q(c.n_particles, 2);
@@ -317,7 +317,7 @@ MatrixXX cal_div_part_vel(const MatrixXX &pos,
 #pragma omp barrier
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO) << "Done with calculation of the divergent part of the velocity and it took "<< duration.count()/1e6<<" seconds.";
+    CLOG(INFO, "TIME") << "Divergent part of the velocity took(s):"<< duration.count()/1e6;
     return q;
 }
 

@@ -71,7 +71,7 @@ void prepare_grad_lap_matrix(const MatrixXX &pos,
     laplacian.makeCompressed();
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO) << "TIME: Preparing the gradient and laplacian matrix took " << duration.count() / 1e6 << " seconds\n";
+    CLOG(INFO, "TIME") << "Preparing the gradient and laplacian matrix(s): " << duration.count() / 1e6;
 }
 
 
@@ -125,5 +125,5 @@ void prepare_grad_lap_matrix_fast(const MatrixXX &pos,
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO) << "TIME: Preparing the gradient and laplacian matrix took " << duration.count() / 1e6 << " seconds\n";
+    CLOG(INFO, "TIME") << "Preparing the gradient and laplacian matrix took (s):" << duration.count() / 1e6 ;
 }

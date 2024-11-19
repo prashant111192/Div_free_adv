@@ -129,8 +129,8 @@ void make_normals(const constants &c,
         }
     }
     auto chrono_end = std::chrono::high_resolution_clock::now();
-    auto chrono_duration = std::chrono::duration_cast<std::chrono::milliseconds>(chrono_end - chrono_start);
-    LOG(INFO) << "TIME: compute normals: " << chrono_duration.count() << " ms\n";
+    auto chrono_duration = std::chrono::duration_cast<std::chrono::microseconds>(chrono_end - chrono_start);
+    CLOG(INFO, "TIME") << "Compute normals(s): " << chrono_duration.count()/10e6;
 }
 
 void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type)

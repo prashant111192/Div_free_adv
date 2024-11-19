@@ -21,14 +21,14 @@ int main(int argc, char* argv[])
 {
     // Stting up the logger
     START_EASYLOGGINGPP(argc, argv);
-    el::Configurations conf("./../../src/easyconfig.conf");
+    el::Configurations conf("./../../src/log_easyconfig.conf");
     el::Loggers::reconfigureAllLoggers(conf);
     el::Logger* DATALogger = el::Loggers::getLogger("DATA");
-    el::Configurations conf2("./../../src/config_Data_log.conf");
+    el::Configurations conf2("./../../src/log_data_config.conf");
     el::Loggers::reconfigureLogger(DATALogger, conf2);
-    // el::Logger* DATALogger = el::Loggers::getLogger("TIME");
-    // el::Configurations conf3("./../../src/config_Time_log.conf");
-    // el::Loggers::reconfigureLogger(DATALogger, conf3);
+    el::Logger* TIMELogger = el::Loggers::getLogger("TIME");
+    el::Configurations conf3("./../../src/log_time_config.conf");
+    el::Loggers::reconfigureLogger(TIMELogger, conf3);
 
     LOG(INFO) << "Starting the simulation with different dp_i (factor to scale the radius of influence)"; 
     for (int i = 10; i <= 100; i++)
@@ -83,7 +83,7 @@ void start(int dp_i)
     // writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini");
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO) << "TIME: Initialise particles: " << duration.count()/1e6 << " seconds \n";
+    CLOG(INFO, "TIME") << "Initialise particles(s): " << duration.count()/1e6;
 
     LOG(INFO) << "Setting up the NN";
     start = std::chrono::high_resolution_clock::now();
@@ -107,7 +107,7 @@ void start(int dp_i)
     LOG(INFO) << "Maximum number of NN: " << count;
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOG(INFO)<< "TIME: Find NN: " << duration.count()/1e6 << " seconds\n";
+    CLOG(INFO, "TIME")<< "Find NN(s): " << duration.count()/1e6;
 
     SpMatrixXX gradient_x(c.n_particles, c.n_particles);
     gradient_x.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
@@ -164,6 +164,6 @@ void start(int dp_i)
     */
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_complete);
-    LOG(INFO) << "Total time taken for the simulation: " << duration.count()/1e6 << " seconds";
+    CLOG(INFO, "TIME") << "Total time taken for the simulation(s): " << duration.count()/1e6;
 }
 
