@@ -14,7 +14,7 @@
 
 
 
-void calc_divergence(const MatrixXX &pos,
+data_type calc_divergence(const MatrixXX &pos,
                 const MatrixXX &vel,
                 const MatrixXX &density,
                 const Eigen::MatrixXi &p_type,

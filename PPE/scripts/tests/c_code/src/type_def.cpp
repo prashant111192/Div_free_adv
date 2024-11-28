@@ -9,7 +9,7 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac,
     c.h = 0.127292;
     c.dp = 0.075;
     c.dp_i = 0;
-    c.h_fac;
+    c.h_fac = 0;
     c.mass = 5.625;
     c.boundary_size = 0;
     c.x_y_bn = 0;
@@ -20,7 +20,7 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac,
     c.n_particles = 98241;
     c.mid_idx = 0;
     c.Eta = 1e-12;
-    c.radius = c.dp * 0.2 * dpi;               // kh, radius of influence
+    c.radius = c.dp * 5;               // kh, radius of influence
     c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
 
     // c.radius = 0.2545584 *5; // kh, radius of influence

@@ -141,12 +141,10 @@ void start(int dp_i)
     // DIVERGENCE
     MatrixXX divergence(c.n_particles, 1);
     divergence.fill(0);
-    calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
+    data_type max_div = calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
     std::string filename = std::to_string(dp_i)+"_divergence";
     writeMatrixToFile<MatrixXX&>(pos, divergence, filename);
-    divergence = divergence.array().abs();
-    CLOG(INFO, "DATA")  <<dp_i * 0.2<< ";"<< divergence.maxCoeff() ;
-/*
+// /*
     pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, normals_computed, c, count);
 
     writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"_p_type");
@@ -154,7 +152,7 @@ void start(int dp_i)
     writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel2");
     // divergence = divergence.array().abs();
     // CLOG(INFO, "DATA")  <<dp_i<< ";"<< divergence.maxCoeff() ;
-    */
+    // */
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_complete);
     make_dsph_input(c, pos, vel, density, p_type, pressure);

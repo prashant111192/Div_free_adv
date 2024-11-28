@@ -1,5 +1,5 @@
 #include "compute.hpp"
-void calc_divergence(const MatrixXX &pos,
+data_type calc_divergence(const MatrixXX &pos,
                      const MatrixXX &vel,
                      const MatrixXX &density,
                      const Eigen::MatrixXi &p_type,
@@ -12,15 +12,15 @@ void calc_divergence(const MatrixXX &pos,
 {
     LOG(INFO) << "Calculating the divergence";
     auto start = std::chrono::high_resolution_clock::now();
+    // resetting the div vector
     divergence.fill(0);
-    int count_fluid = 0;
+
     data_type total_abs_div = 0;
 #pragma omp parallel for num_threads(10)
     for (unsigned int i = 0; i < c.n_particles; i++)
     {
         if (p_type(i) == 1) // if Fluid particle
         {
-            count_fluid += 1;
             for (unsigned int j = 0; j < nearIndex[i].size(); j++)
             {
                 // if (nearDist[i][j] > 0 && nearDist[i][j] <= c.radius)
@@ -43,12 +43,16 @@ void calc_divergence(const MatrixXX &pos,
                 // }
             }
         }
-        total_abs_div += abs(divergence(i));
+        total_abs_div += (divergence(i));
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    data_type max_div = divergence.cwiseAbs2().maxCoeff();
     CLOG(INFO, "TIME") << "Divergecnce calculation(s): " << duration.count() / 1e6;
-    // CLOG(INFO, "DATA") << "MAX DIV:" << divergence.maxCoeff() ;
+    CLOG(INFO, "DATA") << "Max_Div;" << max_div<<";Total_Div;"<<total_abs_div;
+
+    return max_div;
 }
 
 void pressure_poisson(const MatrixXX &pos,
@@ -203,11 +207,10 @@ void pressure_poisson(const MatrixXX &pos,
         MatrixXX q(c.n_particles, 2);
         q = cal_div_part_vel(pos, density, p_type, nearIndex, nearDist, p, gradient_x, gradient_y, c);
         vel = vel - q;
-        calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
+        max_div = calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
 
-        max_div = divergence.maxCoeff();
         // if (current_iter % 1 == 0)
-        // CLOG(INFO, "DATA") << current_iter << "," << solver.iterations() << "," << solver.error() << "," << max_div;
+        LOG(INFO) << current_iter << "," << solver.iterations() << "," << solver.error() << "," << max_div;
         //std::cout << current_iter << ";" << solver.iterations() << ";" << solver.error() << ";" << max_div << std::endl;
         int write_freq = 100;
         if (current_iter % write_freq == 0)

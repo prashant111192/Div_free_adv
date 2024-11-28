@@ -165,4 +165,5 @@ PPE/scripts/**/*.png
 PPE/scripts/**/*.out
 PPE/scripts/**/*.csv
 PPE/**/*.o
+**/bin/**
 
