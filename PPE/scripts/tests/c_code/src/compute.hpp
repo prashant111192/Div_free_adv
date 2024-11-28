@@ -10,6 +10,7 @@
 #include "type_def.hpp"
 #include "in_out.hpp"
 #include "kernel.hpp"
+#include "div_diff.hpp"
 
 
 

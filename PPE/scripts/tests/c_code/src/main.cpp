@@ -10,6 +10,7 @@
 #include "kernel.hpp"
 #include "easylogging++.cc"
 #include "log.hpp"
+// #include "div_diff.hpp"
 
 
 INITIALIZE_EASYLOGGINGPP
@@ -49,9 +50,9 @@ void start(int dp_i)
 {
     auto start_complete = std::chrono::high_resolution_clock::now();
     auto start = std::chrono::high_resolution_clock::now();
-    data_type size = 1;
-    data_type dp = 0.01;
-    data_type boundary_fac = 20*dp;
+    data_type dp = 0.005;
+    data_type size = 1- 12*dp ;
+    data_type boundary_fac = 12;
 
     constants c = define_constants(size, dp, boundary_fac, dp_i);
     LOG(INFO) << c << std::endl;
@@ -67,16 +68,16 @@ void start(int dp_i)
     Eigen::MatrixXi p_type(c.n_particles, 1); // 1 = fluid, 0 = boundary
     MatrixXX pressure(c.n_particles, 1);
 
-    // make_particles(c, pos, vel, density, p_type);
-    make_from_dsph(c, pos, vel, density, p_type, pressure);
+    make_particles(c, pos, vel, density, p_type);
+    // make_from_dsph(c, pos, vel, density, p_type, pressure);
     MatrixXX normals_computed(c.n_particles, 2);  // Normals can be computed only after NN
     normals_computed.fill(0);
 
     // writeMatrixToBinaryFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini");
-    // writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini");
+    writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel_ini");
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    CLOG(INFO, "TIME") << "Initialise particles(s): " << duration.count()/1e6;
+    CLOG(INFO, "TIME") << "Initialise particles(s):" << duration.count()/1e6;
 
     LOG(INFO) << "Setting up the NN";
     start = std::chrono::high_resolution_clock::now();
@@ -100,8 +101,11 @@ void start(int dp_i)
     LOG(INFO) << "Maximum number of NN: " << count;
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    CLOG(INFO, "TIME")<< "Find NN(s): " << duration.count()/1e6;
+    CLOG(INFO, "TIME")<< "Find NN(s):" << duration.count()/1e6;
 
+    SpMatrixXX ker_vals(c.n_particles, c.n_particles);
+    ker_vals.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
+    ker_vals.setZero();
     SpMatrixXX gradient_x(c.n_particles, c.n_particles);
     gradient_x.reserve(Eigen::VectorXi::Constant(c.n_particles, count));
     gradient_x.setZero();
@@ -122,7 +126,7 @@ void start(int dp_i)
     //     }
     // }
 
-    prepare_grad_lap_matrix_fast(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian, count);
+    prepare_grad_lap_matrix_fast(pos, nearIndex, nearDist, c, ker_vals, gradient_x, gradient_y, laplacian, count);
     // prepare_grad_lap_matrix_fast(pos, nearIndex, nearDist, c, gradient_x, gradient_y, laplacian);
     make_normals(c, pos, normals_computed, gradient_x, gradient_y, p_type, nearIndex, density);
     writeMatrixToFile<MatrixXX&>(pos, normals_computed, std::to_string(dp_i)+"normals_computed");
@@ -145,19 +149,27 @@ void start(int dp_i)
     std::string filename = std::to_string(dp_i)+"_divergence";
     writeMatrixToFile<MatrixXX&>(pos, divergence, filename);
     divergence = divergence.array().abs();
-    CLOG(INFO, "DATA")  <<dp_i * 0.2<< ";"<< divergence.maxCoeff() ;
-/*
-    pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, normals_computed, c, count);
+// /*
+
+    for (unsigned int iter = 0; iter < 100; iter++)
+    {
+        div_diff_compute(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, c, count);
+        calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
+        writeMatrixToFile<MatrixXX&>(pos, divergence, std::to_string(dp_i)+"divergence_"+std::to_string(iter));
+
+
+    }
+    // pressure_poisson(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, normals_computed, c, count);
 
     writeMatrixToFile<Eigen::MatrixXi&>(pos, p_type, std::to_string(dp_i)+"_p_type");
     writeMatrixToFile<MatrixXX&>(pos, divergence, std::to_string(dp_i)+"divergence_2");
     writeMatrixToFile<MatrixXX&>(pos, vel, std::to_string(dp_i)+"vel2");
     // divergence = divergence.array().abs();
     // CLOG(INFO, "DATA")  <<dp_i<< ";"<< divergence.maxCoeff() ;
-    */
+    // */
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_complete);
     make_dsph_input(c, pos, vel, density, p_type, pressure);
-    CLOG(INFO, "TIME") << "Total time taken for the simulation(s): " << duration.count()/1e6;
+    CLOG(INFO, "TIME") << "Total time taken for the simulation(s):" << duration.count()/1e6;
 }
 

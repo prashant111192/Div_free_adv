@@ -13,6 +13,9 @@ MatrixXX gradient_poly6(const data_type &distance,
 data_type lap_poly6(const data_type distance,
                     const constants &c);
 
+data_type ker_poly6(const data_type distance, 
+                    const constants &c);
+
 void prepare_grad_lap_matrix(const MatrixXX &pos,
                             const std::vector<std::vector<unsigned int>> &nearIndex,
                             const std::vector<std::vector<data_type>> &nearDist,
@@ -25,8 +28,10 @@ void prepare_grad_lap_matrix_fast(const MatrixXX &pos,
                              const std::vector<std::vector<unsigned int>> &nearIndex,
                              const std::vector<std::vector<data_type>> &nearDist,
                              const constants &c,
+                             SpMatrixXX &ker_vals,
                              SpMatrixXX &gradient_x,
                              SpMatrixXX &gradient_y,
                              SpMatrixXX &laplacian,
                              int max_NN);
+
 #endif

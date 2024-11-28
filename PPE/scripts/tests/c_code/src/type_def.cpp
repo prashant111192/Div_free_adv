@@ -6,22 +6,23 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac,
 
     constants c;
 
-    c.h = 0.127292;
-    c.dp = 0.075;
-    c.dp_i = 0;
-    c.h_fac;
-    c.mass = 5.625;
-    c.boundary_size = 0;
-    c.x_y_bn = 0;
-    c.x_y_bp = 0;
-    c.x_y_n = 0;
-    c.x_y_p = 0;
-    c.resolution = 0;
-    c.n_particles = 98241;
-    c.mid_idx = 0;
-    c.Eta = 1e-12;
-    c.radius = c.dp * 0.2 * dpi;               // kh, radius of influence
-    c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
+    // FOR TANK
+    // c.h = 0.127292;
+    // c.dp = 0.075;
+    // c.dp_i = dpi;
+    // c.h_fac;
+    // c.mass = 5.625;
+    // c.boundary_size = 0;
+    // c.x_y_bn = 0;
+    // c.x_y_bp = 0;
+    // c.x_y_n = 0;
+    // c.x_y_p = 0;
+    // c.resolution = 0;
+    // c.n_particles = 98241;
+    // c.mid_idx = 0;
+    // c.Eta = 1e-12;
+    // c.radius = c.dp * 5 * dpi;               // kh, radius of influence
+    // c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
 
     // c.radius = 0.2545584 *5; // kh, radius of influence
     
@@ -50,9 +51,9 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac,
     // c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
     // c.mass = 6.4;
     // c.Eta = 1e-12;
-    /*
-    c.h = 0.02;            // why was this used??
+    // /*
     c.dp = dp;
+    // c.h = dp*5;            // why was this used??
     c.h_fac = c.h / c.dp; // originally used to scacle h with dp
 
     c.mass = 1000 * c.dp * c.dp; // mass 
@@ -67,9 +68,9 @@ constants define_constants(data_type size, data_type dp, data_type boundary_fac,
     c.Eta = 1e-12;
     // c.radius = 4 * dp; // kh, radius of influence
     c.dp_i = dpi;       // factor to scale the radius of influence
-    c.radius = dpi * dp; // kh, radius of influence
+    c.radius = 6 * dp; // kh, radius of influence
     c.ker_fac = 4 / (M_PI * pow(c.radius, 8)); // the alpha constant in the kernel function
-    */
+    // */
     return c;
 }
 
@@ -133,7 +134,7 @@ void make_normals(const constants &c,
     }
     auto chrono_end = std::chrono::high_resolution_clock::now();
     auto chrono_duration = std::chrono::duration_cast<std::chrono::microseconds>(chrono_end - chrono_start);
-    CLOG(INFO, "TIME") << "Compute normals(s): " << chrono_duration.count()/10e6;
+    CLOG(INFO, "TIME") << "Compute normals(s):" << chrono_duration.count()/10e6;
 }
 
 void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &density, Eigen::MatrixXi &p_type)
@@ -146,6 +147,39 @@ void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
     unsigned int index;
     for (unsigned int i = 0; i < c.resolution; i++)
     {
+        // for (unsigned int j = 0; j < c.resolution; j++)
+        // {
+        //     index = i * c.resolution + j;
+        //     pos(index, 0) = c.x_y_bn + (c.dp * i);
+        //     pos(index, 1) = c.x_y_bn + (c.dp * j);
+
+        //     if (pos(index, 0) < c.x_y_n || pos(index, 0) > c.x_y_p || pos(index, 1) < c.x_y_n || pos(index, 1) > c.x_y_p)
+        //     {
+        //         p_type(index) = 0; // p_type ==0 =>Boundary particle
+        //     }
+        //     else if (pos(index, 0) < c.radius/2 && pos(index, 0) >  -c.radius/2 && pos(index, 1) < -c.radius )
+        //     // else if (pos(index, 0) < c.radius/2 && pos(index, 0) >  -c.radius/2 && pos(index, 1) < c.radius/2 && pos(index, 1) >  -c.radius/2)
+        //     {
+        //         p_type(index) = 0;
+        //     }
+            
+        //     else if (pos(index, 0) < (c.radius *5) + c.radius/2 && pos(index, 0) >  (c.radius * 5) -c.radius/2 &&  pos(index, 1) >  (c.radius *5) -c.radius/2)
+        //     // else if (pos(index, 0) < (c.radius *5) + c.radius/2 && pos(index, 0) >  (c.radius * 5) -c.radius/2 && pos(index, 1) < c.radius +c.radius/2 && pos(index, 1) >  c.radius -c.radius/2)
+        //     {
+        //         p_type(index) = 0;
+        //     }
+        //     else
+        //     {
+        //         // vel(index, 0) = sin(pos(index, 0)) * sin(pos(index, 0));
+        //         // vel(index, 1) = cos(pos(index, 1)) * cos(pos(index, 1));
+        //         if (pos(index, 0) > -5*c.radius && pos(index, 1) > -5*c.radius && pos(index, 0) < 30 * c.dp && pos(index, 1) < c.dp * 30)
+        //         // // if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < c.x_y_p * 0.15 && pos(index, 1) < c.x_y_p * 0.15)
+        //         {
+        //             vel(index, 0) = 2;
+        //             vel(index, 1) = 2;
+        //         }
+        //     }
+        // }
         for (unsigned int j = 0; j < c.resolution; j++)
         {
             index = i * c.resolution + j;
@@ -155,23 +189,13 @@ void make_particles(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
             if (pos(index, 0) < c.x_y_n || pos(index, 0) > c.x_y_p || pos(index, 1) < c.x_y_n || pos(index, 1) > c.x_y_p)
             {
                 p_type(index) = 0; // p_type ==0 =>Boundary particle
-            }
-            else if (pos(index, 0) < c.radius/2 && pos(index, 0) >  -c.radius/2 && pos(index, 1) < -c.radius )
-            // else if (pos(index, 0) < c.radius/2 && pos(index, 0) >  -c.radius/2 && pos(index, 1) < c.radius/2 && pos(index, 1) >  -c.radius/2)
-            {
-                p_type(index) = 0;
-            }
-            
-            else if (pos(index, 0) < (c.radius *5) + c.radius/2 && pos(index, 0) >  (c.radius * 5) -c.radius/2 &&  pos(index, 1) >  (c.radius *5) -c.radius/2)
-            // else if (pos(index, 0) < (c.radius *5) + c.radius/2 && pos(index, 0) >  (c.radius * 5) -c.radius/2 && pos(index, 1) < c.radius +c.radius/2 && pos(index, 1) >  c.radius -c.radius/2)
-            {
-                p_type(index) = 0;
+
             }
             else
             {
                 // vel(index, 0) = sin(pos(index, 0)) * sin(pos(index, 0));
                 // vel(index, 1) = cos(pos(index, 1)) * cos(pos(index, 1));
-                if (pos(index, 0) > -5*c.radius && pos(index, 1) > -5*c.radius && pos(index, 0) < 30 * c.dp && pos(index, 1) < c.dp * 30)
+                if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < 30 * c.dp && pos(index, 1) < c.dp * 30)
                 // // if (pos(index, 0) > 0 && pos(index, 1) > 0 && pos(index, 0) < c.x_y_p * 0.15 && pos(index, 1) < c.x_y_p * 0.15)
                 {
                     vel(index, 0) = 2;

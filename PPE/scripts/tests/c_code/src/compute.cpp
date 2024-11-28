@@ -47,8 +47,8 @@ void calc_divergence(const MatrixXX &pos,
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    CLOG(INFO, "TIME") << "Divergecnce calculation(s): " << duration.count() / 1e6;
-    // CLOG(INFO, "DATA") << "MAX DIV:" << divergence.maxCoeff() ;
+    CLOG(INFO, "TIME") << "Divergecnce calculation(s):" << duration.count() / 1e6;
+    CLOG(INFO, "DATA") << "MAX DIV:" << divergence.cwiseAbs().maxCoeff() ;
 }
 
 void pressure_poisson(const MatrixXX &pos,
@@ -66,7 +66,7 @@ void pressure_poisson(const MatrixXX &pos,
                       const unsigned int count)
 {
     LOG(INFO) << "Starting the pressure poisson solver";
-    int max_iter = 100;
+    int max_iter = 10000;
     int current_iter = 0;
     LOG(INFO) << "Max Iteration: " << max_iter;
 
@@ -80,10 +80,13 @@ void pressure_poisson(const MatrixXX &pos,
     // std::thread th_write1, th_write2;
 
     data_type max_div = 1000;
-    // CLOG(INFO, "DATA") << "#Run,#Iter,Error,MaxDiv" ;
+    CLOG(INFO, "DATA") << "#Run,#Iter,Error,MaxDiv" ;
     while (max_div > 1e-6 && current_iter < max_iter)
     {
         current_iter++;
+        div_diff_compute(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, laplacian, c, count);
+        calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
+        std::cerr<< "MAX DIV: " << divergence.cwiseAbs().maxCoeff() << std::endl;
 
         A.setZero();
         b.setZero();
@@ -144,7 +147,7 @@ void pressure_poisson(const MatrixXX &pos,
 #pragma omp barrier
         end = std::chrono::high_resolution_clock::now();
         duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        LOG(INFO) << "Done with the diagonal elements of A and it took " << duration.count() / 1e6 << " seconds";
+        CLOG(INFO, "TIME") << "Diagonal elements of A and it took(s):" << duration.count() / 1e6;
 
         // Sanity check
         // just to count the number of negative diagonal elements
@@ -205,7 +208,9 @@ void pressure_poisson(const MatrixXX &pos,
         vel = vel - q;
         calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
 
-        max_div = divergence.maxCoeff();
+        max_div = divergence.cwiseAbs().maxCoeff();
+        // max_div = divergence.maxCoeff();
+        std::cerr<< "Max divergence: " << max_div << std::endl;
         // if (current_iter % 1 == 0)
         // CLOG(INFO, "DATA") << current_iter << "," << solver.iterations() << "," << solver.error() << "," << max_div;
         //std::cout << current_iter << ";" << solver.iterations() << ";" << solver.error() << ";" << max_div << std::endl;

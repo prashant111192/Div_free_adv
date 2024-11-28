@@ -79,7 +79,8 @@ void make_from_dsph(const constants &c, MatrixXX &pos, MatrixXX &vel, MatrixXX &
                     //     density(current_line-3, 0) = dataVec[7];
                     // pressure(current_line-3, 0) = dataVec[8];
                 }
-                else{
+                else
+                {
                     std::cout<< "current line: " << current_line <<":" << datLineStr << std::endl;
                 }
                 current_line ++;
