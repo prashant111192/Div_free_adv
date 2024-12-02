@@ -50,7 +50,7 @@ data_type calc_divergence(const MatrixXX &pos,
 
     data_type max_div = divergence.cwiseAbs2().maxCoeff();
     CLOG(INFO, "TIME") << "Divergecnce calculation(s): " << duration.count() / 1e6;
-    CLOG(INFO, "DATA") << "Max_Div;" << max_div<<";Total_Div;"<<total_abs_div;
+    // CLOG(INFO, "DATA") << "Max_Div;" << max_div<<";Total_Div;"<<total_abs_div;
 
     return max_div;
 }
@@ -70,7 +70,7 @@ void pressure_poisson(const MatrixXX &pos,
                       const unsigned int count)
 {
     LOG(INFO) << "Starting the pressure poisson solver";
-    int max_iter = 100;
+    int max_iter = 1000;
     int current_iter = 0;
     LOG(INFO) << "Max Iteration: " << max_iter;
 
@@ -83,9 +83,11 @@ void pressure_poisson(const MatrixXX &pos,
 
     // std::thread th_write1, th_write2;
 
-    data_type max_div = 1000;
+    data_type max_div = 0;
+    data_type max_div_prev = 1000;
+    data_type delta_div = 1000;
     // CLOG(INFO, "DATA") << "#Run,#Iter,Error,MaxDiv" ;
-    while (max_div > 1e-6 && current_iter < max_iter)
+    while (delta_div > 1e-6 && current_iter < max_iter)
     {
         current_iter++;
 
@@ -207,10 +209,14 @@ void pressure_poisson(const MatrixXX &pos,
         MatrixXX q(c.n_particles, 2);
         q = cal_div_part_vel(pos, density, p_type, nearIndex, nearDist, p, gradient_x, gradient_y, c);
         vel = vel - q;
+
+        max_div_prev = max_div;
         max_div = calc_divergence(pos, vel, density, p_type, nearIndex, nearDist, divergence, gradient_x, gradient_y, c);
+        delta_div = abs(max_div - max_div_prev);
 
         // if (current_iter % 1 == 0)
         LOG(INFO) << current_iter << "," << solver.iterations() << "," << solver.error() << "," << max_div;
+        CLOG(INFO, "DATA") << max_div<<";"<< delta_div<<";"<<divergence.sum();
         //std::cout << current_iter << ";" << solver.iterations() << ";" << solver.error() << ";" << max_div << std::endl;
         int write_freq = 100;
         if (current_iter % write_freq == 0)
